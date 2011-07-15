@@ -1,0 +1,48 @@
+<fieldset>
+    <legend>Controller</legend>
+    <div class="field">
+        <label>Host Name:</label> $controller.hostName
+    </div>
+    <div class="field">
+        <label>IP Address:</label> $controller.ipAddress
+    </div>
+    <div class="field">
+        <label>Version:</label> $controller.version
+    </div>
+    <div class="field">
+        <label>Failover State:</label> $format.enumeration($controller.failoverState)
+    </div>
+</fieldset>
+
+<br/>
+
+<fieldset>
+    <legend>Peer Controllers</legend>
+    $peerControllersTable
+</fieldset>
+
+<br/>
+
+<fieldset>
+    <legend>Environment</legend>
+    <div class="field">
+        <label>Name:</label>
+        $environment.environmentName
+    </div>
+    <div class="field">
+        <label>Data Center:</label>
+        $environment.dataCenter
+    </div>
+    <div class="field">
+        <label>Site:</label>
+        $environment.site
+    </div>
+    <div class="field">
+        <label>URL Prefix:</label>
+        $environment.urlPrefix
+    </div>
+
+</fieldset>
+
+
+

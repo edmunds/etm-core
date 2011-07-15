@@ -1,0 +1,53 @@
+<fieldset>
+    <legend>Agent Details</legend>
+
+    <h2>Attributes</h2>
+
+    <div class="field">
+        <label>Host Name:</label> $!hostName
+    </div>
+
+    <div class="field">
+        <label>IP Address:</label> $!ipAddress
+    </div>
+
+    <div class="field">
+        <label>Version:</label> $!version
+    </div>
+
+    <div class="field">
+        <label>Active Rule Set:</label> $!activeRuleSetDigest
+        <br clear="left"/>
+    </div>
+    <br/>
+
+    <h2>Last Rule Set Deployment</h2>
+
+    <div class="field">
+        <label>Date:</label> $format.dateTime($lastDeployment.eventDate)
+    </div>
+
+    <div class="field">
+        <label>Rule Set Digest:</label> $!lastDeployment.ruleSetDigest
+    </div>
+
+    <div class="field">
+        <label>Result:</label> $format.enumeration($lastDeployment.result)
+        <br clear="left"/>
+    </div>
+    <br/>
+
+    <h2>Last Failed Deployment</h2>
+
+    <div class="field">
+        <label>Date:</label> $format.dateTime($lastFailedDeployment.eventDate)
+    </div>
+
+    <div class="field">
+        <label>Rule Set Digest:</label> $!lastFailedDeployment.ruleSetDigest
+    </div>
+
+    <div class="field">
+        <label>Result:</label> $format.enumeration($lastFailedDeployment.result)
+    </div>
+</fieldset>

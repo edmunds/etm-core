@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.edmunds.oss.etm</groupId>       
+        <artifactId>etm-core</artifactId>
+        <version>1.0.1-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>etm-dummy-loadbalancer</artifactId>
+    <name>ETM - Dummy Load Balancer Implementation</name>
+
+    <dependencies>
+        <!-- Edmunds Dependencies -->
+
+        <dependency>
+            <groupId>com.edmunds.oss.etm</groupId>       
+            <artifactId>etm-loadbalancer-api</artifactId>
+        </dependency>
+
+        <!-- Other Dependencies -->
+        <dependency>
+            <groupId>org.apache.click</groupId>
+            <artifactId>click</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.click</groupId>
+            <artifactId>click-extras</artifactId>
+        </dependency>
+
+        <!-- Test Dependencies -->
+        <dependency>
+            <groupId>org.easymock</groupId>
+            <artifactId>easymock</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.easymock</groupId>
+            <artifactId>easymockclassextension</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.testng</groupId>
+            <artifactId>testng</artifactId>
+            <classifier>jdk15</classifier>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.edmunds.oss.common</groupId>
+            <artifactId>autotest</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+</project>

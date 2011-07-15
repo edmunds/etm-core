@@ -1,0 +1,14 @@
+<fieldset>
+    <legend>Active Apache Rule Set</legend>
+    <div class="field">
+        <label>Digest:</label> $!ruleSetDigest
+    </div>
+    <hr/>
+    #foreach($line in $ruleSetLines)
+    $line<br/>
+    #end
+</fieldset>
+<br/>
+<div class="info">Note: Spaces appear around all "|" characters for readability.
+</div>
+

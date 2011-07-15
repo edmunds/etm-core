@@ -1,0 +1,54 @@
+<fieldset>
+    <legend>Application Details</legend>
+
+    <h2>Attributes</h2>
+
+    <div class="field">
+        <label>Name:</label> $!name
+    </div>
+
+    <div class="field">
+        <label>Version:</label> $!version
+    </div>
+
+    <div class="field">
+        <label>Rules:</label>
+
+        <p>
+            #foreach($rule in $rules)
+            $rule<br/>
+            #end
+        </p>
+        <br clear="left"/>
+    </div>
+    <br/>
+
+    <h2>Virtual Server</h2>
+
+    <div class="field">
+        <label>Virtual IP:</label> $!virtualServerAddress
+    </div>
+
+    <div class="field">
+        <label>Pool Members:</label>
+
+        <p>
+            #foreach($poolMember in $virtualServerPoolMembers)
+            $poolMember.hostAddress.hostName ($poolMember.hostAddress.ipAddress)<br/>
+            #end
+        </p>
+        <br clear="left"/>
+    </div>
+    <br/>
+
+    <h2>Http Monitor</h2>
+
+    <div class="field">
+        <label>URL:</label> $!httpMonitor.url
+    </div>
+
+    <div class="field">
+        <label>Content:</label>$!httpMonitor.content
+    </div>
+
+</fieldset>

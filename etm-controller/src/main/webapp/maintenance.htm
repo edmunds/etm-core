@@ -1,0 +1,76 @@
+#set($error = $session.error)
+#if($error)
+<div class="error">$error</div>
+<br/>
+#end
+
+#set ($info = $session.info)
+#if ($info)
+<div class="info">$info</div>
+#end
+
+<fieldset>
+    <legend>Maintenance Operations</legend>
+
+    <div class="field">
+        <label>Suspend:</label>
+
+        <p class="narrow">
+            Suspends all ETM controller operations. A suspended controller will not reconfigure
+            the load balancer or update the web tier. Only an active controller may be suspended.
+        </p>
+    </div>
+
+    <div class="field">
+
+        <label>Resume:</label>
+
+        <p class="narrow">
+            Resumes normal ETM controller operations. Upon resuming, the controller will update
+            the load balancer and web tier with any pending changes. Only a suspended controller
+            may be resumed.
+        </p>
+    </div>
+
+    <div class="field">
+        <label>Load default tokens:</label>
+
+        <p class="narrow">
+            Loads default URL token definitions from the default-url-tokens.xml file, located in the /WEB-INF directory.
+            The default tokens will replace all existing tokens. This operation is useful when initially deploying ETM
+            to a new environment, but keep in mind that it will unconditionally overwrite the currently active tokens.
+        </p>
+    </div>
+
+    <div class="field">
+        <label>Update load balancer:</label>
+
+        <p class="narrow">
+            Forces an update of the load balancer configuration. This is the same operation ETM executes automatically
+            whenever changes are detected in the set of online client applications. Updating the load balancer on demand
+            should only be required in unusual circumstances, but it is a safe operation that can be performed at any
+            time. This is the first operation to try if any of ETM's internal data is out of sync with the load balancer
+            or the deployed Apache rules.
+        </p>
+    </div>
+
+    <div class="field">
+        <label>Reset Apache rules:</label>
+
+        <p class="narrow">
+            Forces the recreation and redeployment of Apache rewrite rules. ETM normally updates Apache rules in an
+            incremental fashion to maintain relationships among conflicting or potentially conflicting (i.e. "blocked")
+            rules. This operation, however, recreates the entire set of rules without regard to the current rule
+            relationships. This operation should only be performed if a forced update of the load balancer fails to
+            genenerate or deploy a valid set of Apache rules.
+        </p>
+    </div>
+
+    <br clear="all"/>
+    <br/>
+
+    <div align="center">
+        $form
+    </div>
+
+</fieldset>

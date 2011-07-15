@@ -1,0 +1,13 @@
+#if($standby)
+<div class="warn">Warning: This controller is in STANDBY mode and contains stale data.<br/>
+    Please see the ACTIVE controller for up-to-date information.
+</div>
+<br/>
+#end
+
+#if($suspended)
+<div class="warn">Warning: This controller is in SUSPENDED mode and will ignore all activity.<br/>
+    Please resume the ACTIVE state as soon as possible.
+</div>
+<br/>
+#end

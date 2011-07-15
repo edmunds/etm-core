@@ -1,0 +1,46 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html>
+<head>
+    $headElements
+    <title>Edmunds Traffic Manager - $title</title>
+    <link rel="stylesheet" type="text/css" href="assets/style.css" title="Style"/>
+</head>
+
+<body>
+
+
+<img id="headerLogo" src="assets/etm-logo.png" alt="Unicorn Logo"/>
+
+<div id="header">
+    <div id="controllerInfo">
+        $controllerInfoPanel
+    </div>
+    <div id="pageTitle">Edmunds Traffic Manager</div>
+
+</div>
+
+<div id="nav">
+    <ul>
+        <li class="left">&nbsp;</li>
+        <li>$home</li>
+        <li>$applications</li>
+        <li>$urlRules</li>
+        <li>$urlTokens</li>
+        <li>$apacheRules</li>
+        <li>$agents</li>
+        <li>$configuration</li>
+        <li class="right">&nbsp;</li>
+    </ul>
+</div>
+
+<div id="content">
+    $failoverWarningPanel
+    #parse($path)
+    <img id="contentSpacer" src="assets/spacer.png" alt="spacer">
+</div>
+<div id="footer">&nbsp;</div>
+
+$jsElements
+</body>
+</html> 

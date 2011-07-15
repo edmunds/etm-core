@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd http://www.springframework.org/schema/context
+       http://www.springframework.org/schema/context/spring-context.xsd">
+
+    <import resource="classpath:etm-common-context.xml"/>
+    <import resource="classpath:load-balancer-context.xml"/>
+
+    <context:component-scan base-package="com.edmunds.etm.apache"/>
+    <context:component-scan base-package="com.edmunds.etm.loadbalancer"/>
+    <context:component-scan base-package="com.edmunds.etm.management"/>
+    <context:component-scan base-package="com.edmunds.etm.rules"/>
+    <context:component-scan base-package="com.edmunds.etm.runtime"/>
+    <context:component-scan base-package="com.edmunds.etm.system"/>
+
+    <context:component-scan base-package="com.edmunds.etm.web.page"
+                            scope-resolver="org.apache.click.extras.spring.PageScopeResolver"/>
+    <context:component-scan base-package="com.edmunds.etm.web.panel"
+                            scope-resolver="org.apache.click.extras.spring.PageScopeResolver"/>
+
+    <bean id="projectProperties" class="com.edmunds.etm.system.impl.ProjectProperties">
+        <property name="version" value="${project.version}"/>
+    </bean>
+
+    <bean class="org.springframework.beans.factory.config.PropertyOverrideConfigurer">
+        <property name="location" value="file:///deployments/edmunds/properties/common/etm-controller.properties"/>
+        <property name="ignoreResourceNotFound" value="true"/>
+        <property name="ignoreInvalidKeys" value="false"/>
+    </bean>
+
+    <!-- Supports JSR-250 annotations e.g. @PostConstruct -->
+    <bean class="org.springframework.context.annotation.CommonAnnotationBeanPostProcessor"/>
+
+    <!-- JMX configuration -->
+    <context:mbean-export/>
+
+
+</beans>

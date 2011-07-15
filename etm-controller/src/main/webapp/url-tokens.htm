@@ -1,0 +1,13 @@
+#set($error = $session.error)
+#if($error)
+<div class="error">$error</div>
+<br/>
+#end
+
+<h1>Active Tokens</h1>
+$activeTokensTable
+<br/>
+
+
+<h1>Default Tokens</h1>
+$defaultTokensTable

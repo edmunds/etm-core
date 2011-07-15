@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<click-app>
+
+    <pages package="com.edmunds.etm.web.page" autobinding="annotation"/>
+
+    <mode value="production"/>
+
+    <format classname="com.edmunds.etm.web.util.EtmFormat"/>
+
+</click-app>
