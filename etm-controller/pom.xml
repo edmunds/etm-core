@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
@@ -42,11 +43,6 @@
         <dependency>
             <groupId>com.edmunds.oss.etm</groupId>
             <artifactId>etm-loadbalancer-api</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>com.edmunds.oss.etm</groupId>
-            <artifactId>etm-dummy-loadbalancer</artifactId>
         </dependency>
 
         <dependency>
@@ -138,4 +134,29 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
+
+    <profiles>
+        <profile>
+            <id>edmunds</id>
+            <dependencies>
+                <dependency>
+                    <groupId>com.edmunds.etm.plugin</groupId>
+                    <artifactId>etm-bigip-loadbalancer</artifactId>
+                    <version>[1.0.0,1.1.0)</version>
+                </dependency>
+            </dependencies>
+        </profile>
+        <profile>
+            <id>public</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>com.edmunds.oss.etm</groupId>
+                    <artifactId>etm-dummy-loadbalancer</artifactId>
+                </dependency>
+            </dependencies>
+        </profile>
+    </profiles>
 </project>
