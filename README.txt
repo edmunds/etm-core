@@ -25,7 +25,7 @@ There are three primary implications of this, you will need to:
 
 Technology Support.
 ===
-We build ETM on Mac (ª) and Deploy on Linux (ª) we do not expect it to work on Windows (ª).
+We build ETM on Mac (tm) and Deploy on Linux (tm) we do not expect it to work on Windows (tm).
 
 We use a very specific set of technologies:
 
@@ -45,8 +45,9 @@ Edmunds Hacks
 
 By default ETM uses the following directories:
 
-sudo mkdir -p /apps/apache-httpd/binsudo mkdir -p /deployments/edmunds/properties/common
-sudo mkdir -p /logs/
+sudo mkdir -p /apps/apache-httpd/bin
+sudo mkdir -p /deployments/edmunds/properties/common
+sudo mkdir -p /logs
 sudo mkdir -p /var/lib/etm-agent
 
 The quickest way to get ETM up and running is simply to create these directories and set them world writable (chmod 777)
@@ -58,10 +59,14 @@ You will also need to create two files:
 /apps/apache-httpd/bin/apachectl   (Make sure this file is executable chmod +x)
 
 --Start--
-#!/bin/bashexit 0
+#!/bin/bash
+
+exit 0
 --End--
 
-/deployments/edmunds/properties/common/test-app-etm.properties
+
+/deployments/edmunds/properties/common/test-app-etm.properties
+
 
 --Start--
 etmClientSettings.enabled=true
@@ -83,7 +88,7 @@ wget http://mirrors.200p-sf.sonic.net/apache/tomcat/tomcat-6/v6.0.33/bin/apache-
 wget http://apache.cs.utah.edu/zookeeper/zookeeper-3.3.3/zookeeper-3.3.3.tar.gz
 wget http://www.eng.lsu.edu/mirrors/apache//maven/binaries/apache-maven-3.0.3-bin.tar.gz
 
-Note: We test with Sun (ª) JDK version 1.6, if you have problems with any other version please re-test with this version before logging any bugs. 
+Note: We test with Sun (tm) JDK version 1.6, if you have problems with any other version please re-test with this version before logging any bugs. 
 
 
 The version of thrift we use is really old (0.2.0), hence it is only available in source form:
@@ -237,7 +242,9 @@ Refresh the browser (http://localhost:8080/etm-controller/applications.htm) to v
 Unpack and start the ETM agent.
 ==
 --Start--
-mkdir etm-agent/target/etm-agentcd etm-agent/target/etm-agentunzip ../etm-agent.zip
+mkdir etm-agent/target/etm-agent
+cd etm-agent/target/etm-agent
+unzip ../etm-agent.zip
 chmod 755 *.sh
 ./start.sh -fg
 --End--
