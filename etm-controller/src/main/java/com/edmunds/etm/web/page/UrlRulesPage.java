@@ -82,7 +82,6 @@ public class UrlRulesPage extends BorderPage {
         return table;
     }
 
-
     private Table buildBlockedRulesTable() {
         Table table = new Table("blockedRulesTable");
         table.setClass(Table.CLASS_ITS);
@@ -139,6 +138,5 @@ public class UrlRulesPage extends BorderPage {
         });
 
         return table;
-
     }
 }

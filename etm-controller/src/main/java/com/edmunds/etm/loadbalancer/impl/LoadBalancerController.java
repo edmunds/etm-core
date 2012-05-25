@@ -32,13 +32,15 @@ import com.edmunds.etm.management.api.MavenModule;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import org.apache.commons.lang.Validate;
+import org.apache.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
 import java.rmi.RemoteException;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
-import org.apache.log4j.Logger;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 
 import static com.edmunds.etm.management.api.ManagementLoadBalancerState.ACTIVE;
 import static com.edmunds.etm.management.api.ManagementVipType.COMPLETE;
@@ -60,10 +62,8 @@ public class LoadBalancerController {
     private final LoadBalancerConfig loadBalancerConfig;
     private EnvironmentConfiguration environment;
 
-    private Set<LoadBalancerControllerCallback> controllerCallbacks;
     private Inet4AddressPool inet4AddressPool;
     private Map<String, VirtualServer> virtualServersByName;
-    private ManagementVips activeVips;
 
     @Autowired
     public LoadBalancerController(LoadBalancerConnection connection,
@@ -72,75 +72,51 @@ public class LoadBalancerController {
         this.connection = connection;
         this.loadBalancerConfig = loadBalancerConfig;
         this.environment = environment;
-        this.controllerCallbacks = Sets.newHashSet();
     }
 
     /**
-     * Adds a load balancer controller callback to receive notification of changes to active vips.
+     * Updates the load balancer with the specified set of vips.
      *
-     * @param callback load balancer controller callback
+     * @param deltaVips delta between the last set of active vips and the desired vips
+     * @param validate  true to validate that existing vips are configured correctly, false to skip validation
+     * @param delete    true to process vip deletions, false to ignore
+     * @return the current set of active vips or null if the operation could not be completed
      */
-    public void addCallback(LoadBalancerControllerCallback callback) {
-        controllerCallbacks.add(callback);
-    }
+    public ManagementVips updateLoadBalancerConfiguration(ManagementVips deltaVips, boolean validate, boolean delete) {
 
-    /**
-     * Gets the set of vips currently active in the load balancer.
-     *
-     * @return active vips
-     */
-    public synchronized ManagementVips getActiveVips() {
-        return activeVips;
-    }
+        Validate.notNull(deltaVips, "deltaVips is null");
 
-    /**
-     * Sets the active load balancer vips.
-     *
-     * @param vips active vips
-     */
-    public synchronized void setActiveVips(ManagementVips vips) {
-        this.activeVips = vips;
-    }
-
-    public void updateLoadBalancerConfiguration(ManagementVips deltaVips, boolean verify) {
-
-        if(deltaVips == null) {
-            logger.error("updateLoadBalancer() called with null delta");
-            return;
-        }
         logger.info("Updating load balancer configuration");
 
         // Connect to an active load balancer
-        if(!connection.connect()) {
+        if (!connection.connect()) {
             logger.error("Cannot connect to an active load balancer");
-            return;
+            return null;
         }
 
         // Initialize internal state
-        if(!initializeFromLoadBalancer()) {
-            return;
+        if (!initializeFromLoadBalancer()) {
+            logger.error("Cannot initialize data from load balancer");
+            return null;
         }
 
         // Clean up virtual servers
         deleteUnknownVirtualServers(deltaVips);
 
         // Process vips
-        Set<ManagementVip> updatedVips = Sets.newHashSet();
-        processVips(deltaVips, updatedVips, verify);
+        Set<ManagementVip> updatedVips = processVips(deltaVips, validate, delete);
 
         // Check that the load balancer is still active
-        if(!connection.isActive()) {
+        if (!connection.isActive()) {
             logger.error("Load balancer not active after updating configuration");
-            return;
+            return null;
         }
 
         // Save and synchronize the new configuration
         connection.saveConfiguration();
 
-        // Store the active vips and notify listeners
-        ManagementVips vips = new ManagementVips(COMPLETE, updatedVips);
-        setActiveVips(vips);
-        processCallbacks();
+        // Return the active vips
+        return new ManagementVips(COMPLETE, updatedVips);
     }
 
     private boolean initializeFromLoadBalancer() {
@@ -148,7 +124,7 @@ public class LoadBalancerController {
         Set<VirtualServer> allVirtualServers;
         try {
             allVirtualServers = connection.getAllVirtualServers();
-        } catch(RemoteException e) {
+        } catch (RemoteException e) {
             logger.error("Failed to get all virtual servers", e);
             return false;
         }
@@ -159,32 +135,40 @@ public class LoadBalancerController {
         return true;
     }
 
-    private void processVips(ManagementVips deltaVips, Collection<ManagementVip> updatedVips, boolean verify) {
-        for(ManagementVip vip : deltaVips.getVips()) {
-            if(logger.isDebugEnabled()) {
+    private Set<ManagementVip> processVips(ManagementVips deltaVips,
+                                           boolean validateExisting,
+                                           boolean deleteVips) {
+        Set<ManagementVip> updatedVips = Sets.newHashSet();
+        for (ManagementVip vip : deltaVips.getVips()) {
+            if (logger.isDebugEnabled()) {
                 logger.debug(String.format("Processing vip: %s", vip));
             }
 
             ManagementVip updatedVip;
-            switch(vip.getLoadBalancerState()) {
+            switch (vip.getLoadBalancerState()) {
                 case CREATE_REQUEST:
                     updatedVip = createVirtualServer(vip);
                     break;
                 case DELETE_REQUEST:
-                    updatedVip = deleteVirtualServer(vip);
-                    // Don't copy deletions.
+                    if (deleteVips) {
+                        updatedVip = deleteVirtualServer(vip);
+                    } else {
+                        // preserve the original vip
+                        updatedVip = vip;
+                    }
                     break;
                 case ACTIVE:
-                    updatedVip = updatePoolMembers(vip, verify);
+                    updatedVip = updatePoolMembers(vip, validateExisting);
                     break;
                 default:
                     throw new IllegalStateException("Unexpected State: " + vip.getLoadBalancerState());
             }
 
-            if(updatedVip != null) {
+            if (updatedVip != null) {
                 updatedVips.add(updatedVip);
             }
         }
+        return updatedVips;
     }
 
     private ManagementVip updatePoolMembers(ManagementVip vip, boolean verify) {
@@ -192,20 +176,20 @@ public class LoadBalancerController {
         // Check that the virtual server exists
         String serverName = createServerName(vip.getMavenModule());
         VirtualServer vs = virtualServersByName.get(serverName);
-        if(vs == null) {
+        if (vs == null) {
             return createVirtualServer(vip);
         }
 
-        if(verify) {
+        if (verify) {
             validateVirtualServer(vip);
         }
 
         Collection<ManagementPoolMember> updatedMembers = Lists.newArrayList();
 
-        for(ManagementPoolMember poolMember : vip.getPoolMembers().values()) {
+        for (ManagementPoolMember poolMember : vip.getPoolMembers().values()) {
 
             ManagementPoolMember updatedPoolMember;
-            switch(poolMember.getLoadBalancerState()) {
+            switch (poolMember.getLoadBalancerState()) {
                 case CREATE_REQUEST:
                     updatedPoolMember = addPoolMember(vip, poolMember);
                     break;
@@ -219,12 +203,12 @@ public class LoadBalancerController {
                 default:
                     throw new IllegalStateException("Unexpected State: " + poolMember.getLoadBalancerState());
             }
-            if(updatedPoolMember != null) {
+            if (updatedPoolMember != null) {
                 updatedMembers.add(updatedPoolMember);
             }
         }
         return new ManagementVip(ACTIVE, vip.getMavenModule(), vs.getHostAddress(),
-            updatedMembers, vip.getRootContext(), vip.getRules(), vip.getHttpMonitor());
+                updatedMembers, vip.getRootContext(), vip.getRules(), vip.getHttpMonitor());
     }
 
     private ManagementVip createVirtualServer(ManagementVip vip) {
@@ -233,11 +217,11 @@ public class LoadBalancerController {
 
         // Check for existing virtual server
         VirtualServer vs = virtualServersByName.get(serverName);
-        if(vs != null) {
+        if (vs != null) {
             logger.warn(String.format("Replacing existing virtual server: %s", serverName));
             try {
                 deleteVirtualServer(vs);
-            } catch(RemoteException e) {
+            } catch (RemoteException e) {
                 logger.error(String.format("Failed to delete virtual server: %s", serverName), e);
             }
         }
@@ -250,27 +234,27 @@ public class LoadBalancerController {
         try {
             connection.createVirtualServer(vs, vip.getHttpMonitor());
             virtualServersByName.put(vs.getName(), vs);
-        } catch(VirtualServerExistsException e) {
+        } catch (VirtualServerExistsException e) {
             logger.warn(String.format("Attempted to create duplicate virtual server: %s", serverName), e);
             try {
                 vs = connection.getVirtualServer(serverName);
                 virtualServersByName.put(vs.getName(), vs);
-            } catch(VirtualServerNotFoundException e1) {
+            } catch (VirtualServerNotFoundException e1) {
                 logger.error(String.format("Virtual server not found: %s", serverName), e);
-            } catch(RemoteException e1) {
+            } catch (RemoteException e1) {
                 logger.error(String.format("Unable to get virtual server: %s", serverName), e);
             }
-        } catch(RemoteException e) {
+        } catch (RemoteException e) {
             logger.error(String.format("Failed to create virtual server: %s", serverName), e);
             return null;
         }
 
         Collection<ManagementPoolMember> updatedMembers = Lists.newArrayList();
-        for(PoolMember member : vs.getPoolMembers()) {
+        for (PoolMember member : vs.getPoolMembers()) {
             updatedMembers.add(new ManagementPoolMember(ACTIVE, member.getHostAddress()));
         }
         return new ManagementVip(ACTIVE, vip.getMavenModule(), vs.getHostAddress(),
-            updatedMembers, vip.getRootContext(), vip.getRules(), vip.getHttpMonitor());
+                updatedMembers, vip.getRootContext(), vip.getRules(), vip.getHttpMonitor());
     }
 
     private void validateVirtualServer(ManagementVip vip) {
@@ -284,11 +268,11 @@ public class LoadBalancerController {
         Map<String, ManagementVip> vipsByServerName = createVipServerNameMap(vips);
         Set<VirtualServer> virtualServers = Sets.newHashSet(virtualServersByName.values());
 
-        for(VirtualServer vs : virtualServers) {
-            if(!vipsByServerName.containsKey(vs.getName())) {
+        for (VirtualServer vs : virtualServers) {
+            if (!vipsByServerName.containsKey(vs.getName())) {
                 try {
                     deleteVirtualServer(vs);
-                } catch(RemoteException e) {
+                } catch (RemoteException e) {
                     logger.error(String.format("Failed to delete virtual server: %s", vs.getName()), e);
                 }
             }
@@ -299,10 +283,10 @@ public class LoadBalancerController {
         String serverName = createServerName(vip.getMavenModule());
         try {
             deleteVirtualServer(new VirtualServer(serverName, vip.getHostAddress()));
-        } catch(RemoteException e) {
+        } catch (RemoteException e) {
             logger.error(String.format("Failed to delete virtual server: %s", serverName), e);
             return new ManagementVip(ACTIVE, vip.getMavenModule(), vip.getHostAddress(),
-                vip.getPoolMembers().values(), vip.getRootContext(), vip.getRules(), vip.getHttpMonitor());
+                    vip.getPoolMembers().values(), vip.getRootContext(), vip.getRules(), vip.getHttpMonitor());
         }
         return null;
     }
@@ -312,10 +296,10 @@ public class LoadBalancerController {
         try {
             connection.deleteVirtualServer(vs);
             virtualServersByName.remove(vs.getName());
-        } catch(VirtualServerNotFoundException e) {
+        } catch (VirtualServerNotFoundException e) {
             logger.warn(String.format("Attempted to delete nonexistent virtual server: %s", vs.getName()));
         }
-        if(vs.getHostAddress() != null) {
+        if (vs.getHostAddress() != null) {
             inet4AddressPool.releaseAddress(vs.getHostAddress().getHost());
         }
     }
@@ -327,12 +311,12 @@ public class LoadBalancerController {
         logger.info(String.format("Adding pool member %s to virtual server: %s", pm, serverName));
         try {
             connection.addPoolMember(serverName, pm);
-        } catch(PoolMemberExistsException e) {
+        } catch (PoolMemberExistsException e) {
             logger.warn(String.format(
-                "Attempted to add duplicate pool member %s to virtual server: %s", pm, serverName));
-        } catch(RemoteException e) {
+                    "Attempted to add duplicate pool member %s to virtual server: %s", pm, serverName));
+        } catch (RemoteException e) {
             logger.error(String.format(
-                "Failed to add pool member %s to virtual server: %s", pm, serverName), e);
+                    "Failed to add pool member %s to virtual server: %s", pm, serverName), e);
             return null;
         }
         return new ManagementPoolMember(ACTIVE, memberAddress);
@@ -345,12 +329,12 @@ public class LoadBalancerController {
         logger.info(String.format("Removing pool member %s from virtual server: %s", pm, serverName));
         try {
             connection.removePoolMember(serverName, pm);
-        } catch(PoolMemberNotFoundException e) {
+        } catch (PoolMemberNotFoundException e) {
             logger.warn(String.format(
-                "Attempted to remove nonexistent pool member %s from virtual server: %s", pm, serverName));
-        } catch(RemoteException e) {
+                    "Attempted to remove nonexistent pool member %s from virtual server: %s", pm, serverName));
+        } catch (RemoteException e) {
             logger.error(String.format(
-                "Failed to delete pool member %s from virtual server: %s", pm, serverName), e);
+                    "Failed to delete pool member %s from virtual server: %s", pm, serverName), e);
             return poolMember;
         }
         return null;
@@ -360,13 +344,13 @@ public class LoadBalancerController {
         Inet4AddressPool addressPool = new Inet4AddressPool(loadBalancerConfig);
 
         Collection<OrderedInet4Address> serverAddresses = Sets.newHashSetWithExpectedSize(virtualServers.size());
-        for(VirtualServer vs : virtualServers) {
+        for (VirtualServer vs : virtualServers) {
 
             OrderedInet4Address address;
             try {
                 address = new OrderedInet4Address(vs.getHostAddress().getHost());
                 serverAddresses.add(address);
-            } catch(RuntimeException e) {
+            } catch (RuntimeException e) {
                 logger.error(String.format("Invalid virtual server host: %s", vs.getHostAddress().getHost()), e);
             }
         }
@@ -377,17 +361,17 @@ public class LoadBalancerController {
     private Map<String, VirtualServer> createEtmVirtualServerMap(Set<VirtualServer> virtualServers) {
         Map<String, VirtualServer> map = Maps.newHashMapWithExpectedSize(virtualServers.size());
 
-        for(VirtualServer vs : virtualServers) {
+        for (VirtualServer vs : virtualServers) {
             OrderedInet4Address address;
             try {
                 address = new OrderedInet4Address(vs.getHostAddress().getHost());
-            } catch(RuntimeException e) {
+            } catch (RuntimeException e) {
                 logger.error(String.format("Invalid virtual server host: %s", vs.getHostAddress().getHost()), e);
                 continue;
             }
 
             String name = vs.getName();
-            if(name.startsWith(VIRTUAL_SERVER_NAME_PREFIX) && inet4AddressPool.isAddressInRange(address)) {
+            if (name.startsWith(VIRTUAL_SERVER_NAME_PREFIX) && inet4AddressPool.isAddressInRange(address)) {
                 map.put(vs.getName(), vs);
             }
         }
@@ -396,23 +380,17 @@ public class LoadBalancerController {
 
     private Map<String, ManagementVip> createVipServerNameMap(ManagementVips vips) {
         Map<String, ManagementVip> map = Maps.newHashMapWithExpectedSize(vips.getVips().size());
-        for(ManagementVip vip : vips.getVips()) {
+        for (ManagementVip vip : vips.getVips()) {
             String serverName = createServerName(vip.getMavenModule());
             map.put(serverName, vip);
         }
         return map;
     }
 
-    private void processCallbacks() {
-        for(LoadBalancerControllerCallback callback : controllerCallbacks) {
-            callback.onActiveVipsUpdated(this);
-        }
-    }
-
     private Set<PoolMember> vipToPoolMembers(ManagementVip vip) {
         Collection<ManagementPoolMember> managementPoolMembers = vip.getPoolMembers().values();
         Set<PoolMember> poolMembers = Sets.newHashSetWithExpectedSize(managementPoolMembers.size());
-        for(ManagementPoolMember mpm : managementPoolMembers) {
+        for (ManagementPoolMember mpm : managementPoolMembers) {
             poolMembers.add(new PoolMember(mpm.getHostAddress()));
         }
         return poolMembers;

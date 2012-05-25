@@ -16,7 +16,7 @@
 
         <p>
             #foreach($rule in $rules)
-            $rule<br/>
+                $rule<br/>
             #end
         </p>
         <br clear="left"/>
@@ -34,7 +34,7 @@
 
         <p>
             #foreach($poolMember in $virtualServerPoolMembers)
-            $poolMember.hostAddress.hostName ($poolMember.hostAddress.ipAddress)<br/>
+                $poolMember<br/>
             #end
         </p>
         <br clear="left"/>

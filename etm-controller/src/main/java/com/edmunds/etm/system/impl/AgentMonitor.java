@@ -42,12 +42,14 @@ import java.util.Set;
 @Component
 public class AgentMonitor implements ZooKeeperConnectionListener {
 
+    private static final long DEFAULT_RULE_SET_DEPLOYMENT_TIMEOUT = 5000;
     private static final Logger logger = Logger.getLogger(AgentMonitor.class);
 
     private final ZooKeeperTreeWatcher agentWatcher;
     private final ObjectSerializer objectSerializer;
 
     private Set<AgentInstance> connectedAgents;
+    private long ruleSetDeploymentTimeout;
 
     @Autowired
     public AgentMonitor(ZooKeeperConnection connection,
@@ -63,6 +65,7 @@ public class AgentMonitor implements ZooKeeperConnectionListener {
 
         this.objectSerializer = objectSerializer;
         this.connectedAgents = Sets.newHashSet();
+        this.ruleSetDeploymentTimeout = DEFAULT_RULE_SET_DEPLOYMENT_TIMEOUT;
     }
 
     /**
@@ -72,6 +75,67 @@ public class AgentMonitor implements ZooKeeperConnectionListener {
      */
     public Set<AgentInstance> getConnectedAgents() {
         return connectedAgents;
+    }
+
+    /**
+     * Gets the rule set deployment timeout in milliseconds.
+     *
+     * @return milliseconds to wait for a rule set to be deployed to a single proxy server
+     */
+    public long getRuleSetDeploymentTimeout() {
+        return ruleSetDeploymentTimeout;
+    }
+
+    /**
+     * Set the rule set deployment timeout in milliseconds.
+     *
+     * @param ruleSetDeploymentTimeout milliseconds to wait for deployment to a single proxy server
+     */
+    public void setRuleSetDeploymentTimeout(long ruleSetDeploymentTimeout) {
+        this.ruleSetDeploymentTimeout = ruleSetDeploymentTimeout;
+    }
+
+    /**
+     * Waits for the specified rule set to be deployed to all web proxy agents.
+     *
+     * @param ruleSetDigest digest of the rule set to wait for
+     * @return true when the rule set has been deployed, false when the timeout has been exceeded
+     */
+    public boolean waitForRuleSetDeployment(String ruleSetDigest) {
+        long timeout = ruleSetDeploymentTimeout * getConnectedAgents().size();
+        long startTime = System.currentTimeMillis();
+        boolean timeoutExpired;
+        do {
+            try {
+                Thread.sleep(500);
+            } catch (InterruptedException e) {
+                logger.error("Interruped while waiting for rule set deployment", e);
+            }
+            long currentTime = System.currentTimeMillis();
+            timeoutExpired = (currentTime - startTime) < timeout;
+        } while (!isRuleSetDeployed(ruleSetDigest) && !timeoutExpired);
+        return !timeoutExpired;
+    }
+
+    /**
+     * Indicates whether the specified rule set has been deployed to all web proxy agents.
+     *
+     * @param ruleSetDigest digest of the rule set to check
+     * @return true if the rule set is deployed to all agents, false otherwise
+     */
+    public boolean isRuleSetDeployed(String ruleSetDigest) {
+        if (ruleSetDigest == null) {
+            return false;
+        }
+
+        for (AgentInstance agent : getConnectedAgents()) {
+            String agentDigest = agent.getActiveRuleSetDigest();
+            if (!ruleSetDigest.equals(agentDigest)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     @Override

@@ -21,7 +21,7 @@ package com.edmunds.etm.management.impl;
 public interface VipMonitorCallback {
     /**
      * Called whenever a change is detected in the persisted vips.
-     *
+     * <p/>
      * The vip monitor object provides a {@link VipMonitor#getPersistentVips()} method that retrieves the currently
      * persisted vips in a thread-safe manner. This method should be always be used in preference to storing a copy of
      * the vips, which may become out of synch in a multithreaded environment.

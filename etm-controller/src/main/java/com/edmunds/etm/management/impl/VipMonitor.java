@@ -26,26 +26,29 @@ import com.edmunds.zookeeper.treewatcher.ZooKeeperTreeConsistentCallback;
 import com.edmunds.zookeeper.treewatcher.ZooKeeperTreeNode;
 import com.edmunds.zookeeper.treewatcher.ZooKeeperTreeWatcher;
 import com.google.common.collect.Sets;
-import java.util.Collection;
 import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.util.Collection;
+
 import static com.edmunds.zookeeper.connection.ZooKeeperConnectionState.INITIALIZED;
 
 /**
- * This class tracks the zookeeper path /etm/loadBalancer/1.0/ENVIRONMENT/vips. <p/> However this tree does not contain
- * the mapping from Maven Module -> Rules. As a result this class implements RuleSetVipCallback so that it can get store
- * the client mappings, so that it can lookup rules.
+ * This class monitors the load balancer vips persisted in zookeeper.
+ * <p/>
+ * Vip nodes are stored at the zookeeper path /etm/loadBalancer/VERSION/ENVIRONMENT/vips.
  */
 @Component
 public class VipMonitor implements ZooKeeperConnectionListener {
 
     private static final Logger logger = Logger.getLogger(VipMonitor.class);
 
+    private final ZooKeeperConnection connection;
+    private final ControllerPaths controllerPaths;
+    private final ObjectSerializer objectSerializer;
     private final ZooKeeperTreeWatcher watcher;
     private final Collection<VipMonitorCallback> vipMonitorCallbacks;
-    private final ObjectSerializer objectSerializer;
 
     /**
      * The current root of the vips tree.
@@ -60,25 +63,20 @@ public class VipMonitor implements ZooKeeperConnectionListener {
     /**
      * Auto-wire constructor.
      *
-     * @param connection the ZooKeeper connection
-     * @param controllerPaths the ZooKeeper paths used by the controller
+     * @param connection       the ZooKeeper connection
+     * @param controllerPaths  the ZooKeeper paths used by the controller
      * @param objectSerializer the object serializer
      */
     @Autowired
     public VipMonitor(ZooKeeperConnection connection,
                       ControllerPaths controllerPaths,
                       ObjectSerializer objectSerializer) {
-        final String rootPath = controllerPaths.getVips();
-        this.watcher = new ZooKeeperTreeWatcher(connection, 0, rootPath, new ZooKeeperTreeConsistentCallback() {
-            @Override
-            public void treeConsistent(ZooKeeperTreeNode oldRoot, ZooKeeperTreeNode newRoot) {
-                setRootNode(newRoot);
-            }
-        });
-        this.vipMonitorCallbacks = Sets.newHashSet();
+        this.connection = connection;
+        this.controllerPaths = controllerPaths;
         this.objectSerializer = objectSerializer;
+        this.watcher = createWatcher();
+        this.vipMonitorCallbacks = Sets.newHashSet();
     }
-
 
     /**
      * Adds a vip monitor callback to receive notification of changes to persistent vips.
@@ -97,11 +95,11 @@ public class VipMonitor implements ZooKeeperConnectionListener {
     @Override
     public void onConnectionStateChanged(ZooKeeperConnectionState state) {
 
-        if(logger.isDebugEnabled()) {
+        if (logger.isDebugEnabled()) {
             logger.debug("Connection state changed: " + state);
         }
 
-        if(state == INITIALIZED) {
+        if (state == INITIALIZED) {
             watcher.initialize();
         }
     }
@@ -124,6 +122,20 @@ public class VipMonitor implements ZooKeeperConnectionListener {
         persistentVips = vips;
     }
 
+    /**
+     * Creates a new zookeeper tree watcher on the vips root node.
+     *
+     * @return new vips tree watcher
+     */
+    private ZooKeeperTreeWatcher createWatcher() {
+        final String rootPath = controllerPaths.getVips();
+        return new ZooKeeperTreeWatcher(connection, 0, rootPath, new ZooKeeperTreeConsistentCallback() {
+            @Override
+            public void treeConsistent(ZooKeeperTreeNode oldRoot, ZooKeeperTreeNode newRoot) {
+                setRootNode(newRoot);
+            }
+        });
+    }
 
     /**
      * Called each time  vips tree changes.
@@ -137,7 +149,7 @@ public class VipMonitor implements ZooKeeperConnectionListener {
 
     private void generateVips() {
         logger.debug("generateVips Called");
-        if(rootNode == null) {
+        if (rootNode == null) {
             return;
         }
 
@@ -145,7 +157,7 @@ public class VipMonitor implements ZooKeeperConnectionListener {
         final ManagementVips currentVips = new VipsBuilder(rootNode, objectSerializer).generateVips();
 
         ManagementVips vips = getPersistentVips();
-        if(vips == null || !vips.equals(currentVips)) {
+        if (vips == null || !vips.equals(currentVips)) {
             setPersistentVips(currentVips);
             processCallbacks();
         }
@@ -154,7 +166,7 @@ public class VipMonitor implements ZooKeeperConnectionListener {
     private void processCallbacks() {
         logger.debug("processCallbacks Called");
 
-        for(VipMonitorCallback callback : vipMonitorCallbacks) {
+        for (VipMonitorCallback callback : vipMonitorCallbacks) {
             callback.onPersistentVipsUpdated(this);
         }
     }

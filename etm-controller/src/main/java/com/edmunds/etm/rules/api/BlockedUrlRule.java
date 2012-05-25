@@ -16,9 +16,10 @@
 package com.edmunds.etm.rules.api;
 
 import com.edmunds.etm.management.api.MavenModule;
+import org.apache.commons.lang.Validate;
+
 import java.util.HashSet;
 import java.util.Set;
-import org.apache.commons.lang.Validate;
 
 /**
  * A UrlRule that has been blocked from the active set by one or more conflicting rules.
@@ -55,10 +56,10 @@ public class BlockedUrlRule {
 
     @Override
     public boolean equals(Object o) {
-        if(this == o) {
+        if (this == o) {
             return true;
         }
-        if(!(o instanceof BlockedUrlRule)) {
+        if (!(o instanceof BlockedUrlRule)) {
             return false;
         }
 

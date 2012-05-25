@@ -65,7 +65,7 @@ public class ApplicationRepository {
 
         Set<Application> applications = Sets.newHashSet();
 
-        for(ApplicationSeries series : seriesByName.values()) {
+        for (ApplicationSeries series : seriesByName.values()) {
             applications.addAll(series.getAllVersions());
         }
         return applications;
@@ -75,7 +75,7 @@ public class ApplicationRepository {
 
         Set<Application> applications = Sets.newHashSetWithExpectedSize(seriesByName.size());
 
-        for(ApplicationSeries series : seriesByName.values()) {
+        for (ApplicationSeries series : seriesByName.values()) {
             final Application activeVersion = series.getActiveVersion();
             if (activeVersion != null) {
                 applications.add(activeVersion);
@@ -86,7 +86,7 @@ public class ApplicationRepository {
 
     public synchronized Set<Application> getInactiveApplications() {
         Set<Application> applications = Sets.newHashSet();
-        for(ApplicationSeries series : seriesByName.values()) {
+        for (ApplicationSeries series : seriesByName.values()) {
             applications.addAll(series.getInactiveVersions());
         }
         return applications;
@@ -94,8 +94,8 @@ public class ApplicationRepository {
 
     public synchronized Application getApplicationById(String id) {
         Application match = null;
-        for(Application app : getAllApplications()) {
-            if(app.getId().equals(id)) {
+        for (Application app : getAllApplications()) {
+            if (app.getId().equals(id)) {
                 match = app;
                 break;
             }
@@ -112,7 +112,7 @@ public class ApplicationRepository {
 
         ApplicationSeries series = getSeriesByName(app.getName());
 
-        if(series == null) {
+        if (series == null) {
             // Create singleton series.
             series = new ApplicationSeries(app);
         } else {
@@ -155,7 +155,6 @@ public class ApplicationRepository {
         } else {
             // The series has more than one entry in it and we need to add the replacement (smaller) series.
             temp.put(applicationName, series);
-
         }
         setSeriesByName(temp);
     }
@@ -166,14 +165,14 @@ public class ApplicationRepository {
 
     public synchronized void updateFromDeltaVips(ManagementVips vips) {
         Application app;
-        for(ManagementVip vip : vips.getMavenModuleVips()) {
+        for (ManagementVip vip : vips.getVips()) {
 
-            switch(vip.getLoadBalancerState()) {
+            switch (vip.getLoadBalancerState()) {
                 case CREATE_REQUEST:
                 case ACTIVE:
                     // Do not activate applications with no rules
                     // Check for vip with null rules
-                    if(vip.getRules() == null) {
+                    if (vip.getRules() == null) {
                         String message = String.format("Vip with null rules detected: %s", vip.getHostAddress());
                         logger.error(message);
                         continue;
@@ -201,7 +200,7 @@ public class ApplicationRepository {
         String name = Application.applicationName(mavenModule);
         ApplicationSeries series = seriesByName.get(name);
 
-        if(series == null) {
+        if (series == null) {
             return null;
         }
 
@@ -211,10 +210,10 @@ public class ApplicationRepository {
 
     private Application createApplicationFromVip(ManagementVip vip) {
         VirtualServer vs = null;
-        if(vip.getHostAddress() != null) {
+        if (vip.getHostAddress() != null) {
             Collection<ManagementPoolMember> vipMembers = vip.getPoolMembers().values();
             Set<PoolMember> members = Sets.newHashSetWithExpectedSize(vipMembers.size());
-            for(ManagementPoolMember mpm : vipMembers) {
+            for (ManagementPoolMember mpm : vipMembers) {
                 members.add(new PoolMember(mpm.getHostAddress()));
             }
             String prefix = LoadBalancerController.VIRTUAL_SERVER_NAME_PREFIX;

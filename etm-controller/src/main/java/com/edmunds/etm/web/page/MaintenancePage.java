@@ -21,8 +21,6 @@ import com.edmunds.etm.rules.impl.UrlTokenMonitor;
 import com.edmunds.etm.rules.impl.WebConfigurationManager;
 import com.edmunds.etm.system.api.FailoverState;
 import com.edmunds.etm.system.impl.FailoverMonitor;
-import java.io.File;
-import java.io.IOException;
 import org.apache.click.ActionListener;
 import org.apache.click.Control;
 import org.apache.click.control.Button;
@@ -31,6 +29,9 @@ import org.apache.click.control.Submit;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.io.File;
+import java.io.IOException;
+
 /**
  * Provides ETM maintenance operations.
  *
@@ -38,7 +39,6 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class MaintenancePage extends BorderPage {
-
 
     private final FailoverMonitor failoverMonitor;
     private final UrlTokenRepository tokenRepository;
@@ -69,7 +69,7 @@ public class MaintenancePage extends BorderPage {
     protected boolean onSuspendClick() {
         try {
             failoverMonitor.suspend();
-        } catch(IllegalStateException e) {
+        } catch (IllegalStateException e) {
             getContext().setFlashAttribute("error", e.getMessage());
         }
 
@@ -80,7 +80,7 @@ public class MaintenancePage extends BorderPage {
     protected boolean onResumeClick() {
         try {
             failoverMonitor.resume();
-        } catch(IllegalStateException e) {
+        } catch (IllegalStateException e) {
             getContext().setFlashAttribute("error", e.getMessage());
         }
 
@@ -95,7 +95,7 @@ public class MaintenancePage extends BorderPage {
         try {
             tokenRepository.loadTokensFromFile(file, true);
             getContext().setFlashAttribute("info", "Default URL tokens loaded");
-        } catch(IOException e) {
+        } catch (IOException e) {
             getContext().setFlashAttribute("error", e.getMessage());
         }
 
@@ -120,7 +120,7 @@ public class MaintenancePage extends BorderPage {
     }
 
     private FailoverState getFailoverState() {
-        if(failoverState == null) {
+        if (failoverState == null) {
             failoverState = failoverMonitor.getFailoverState();
         }
 
@@ -210,5 +210,4 @@ public class MaintenancePage extends BorderPage {
         button.setDisabled(getFailoverState() != FailoverState.ACTIVE);
         return button;
     }
-
 }

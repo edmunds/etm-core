@@ -24,12 +24,13 @@ import com.edmunds.zookeeper.connection.ZooKeeperConnectionState;
 import com.edmunds.zookeeper.election.ZooKeeperElection;
 import com.edmunds.zookeeper.election.ZooKeeperElectionListener;
 import com.google.common.collect.Sets;
-import java.util.Set;
-import javax.annotation.PostConstruct;
 import org.apache.log4j.Logger;
 import org.apache.zookeeper.KeeperException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
+import javax.annotation.PostConstruct;
+import java.util.Set;
 
 /**
  * Monitors the failover state of the ETM controller and notifies listeners of changes.
@@ -50,7 +51,7 @@ public class FailoverMonitor implements ZooKeeperConnectionListener, ZooKeeperEl
     /**
      * Constructs a new FailoverMonitor with injected dependencies.
      *
-     * @param connection the ZooKeeper connection
+     * @param connection      the ZooKeeper connection
      * @param controllerPaths controller paths
      */
     @Autowired
@@ -94,7 +95,7 @@ public class FailoverMonitor implements ZooKeeperConnectionListener, ZooKeeperEl
      * @throws IllegalStateException if not in ACTIVE state
      */
     public void suspend() {
-        if(getFailoverState() != FailoverState.ACTIVE) {
+        if (getFailoverState() != FailoverState.ACTIVE) {
             throw new IllegalStateException("Only an active controller may be suspended");
         }
         changeFailoverState(FailoverState.SUSPENDED);
@@ -106,7 +107,7 @@ public class FailoverMonitor implements ZooKeeperConnectionListener, ZooKeeperEl
      * @throws IllegalStateException if not in SUSPENDED state
      */
     public void resume() {
-        if(getFailoverState() != FailoverState.SUSPENDED) {
+        if (getFailoverState() != FailoverState.SUSPENDED) {
             throw new IllegalStateException("Only a suspended controller may be resumed");
         }
         changeFailoverState(FailoverState.ACTIVE);
@@ -114,7 +115,7 @@ public class FailoverMonitor implements ZooKeeperConnectionListener, ZooKeeperEl
 
     @Override
     public void onConnectionStateChanged(ZooKeeperConnectionState state) {
-        if(state == ZooKeeperConnectionState.INITIALIZED) {
+        if (state == ZooKeeperConnectionState.INITIALIZED) {
             masterElection.enroll(this);
         }
     }
@@ -145,7 +146,7 @@ public class FailoverMonitor implements ZooKeeperConnectionListener, ZooKeeperEl
     private void changeFailoverState(FailoverState state) {
         logger.info(String.format("Failover state changed: %s", state));
         setFailoverState(state);
-        for(FailoverListener listener : failoverListeners) {
+        for (FailoverListener listener : failoverListeners) {
             listener.onFailoverStateChanged(this);
         }
     }

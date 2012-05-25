@@ -15,8 +15,9 @@
  */
 package com.edmunds.etm.apache.domain;
 
-import java.text.MessageFormat;
 import org.apache.commons.lang.StringUtils;
+
+import java.text.MessageFormat;
 
 /**
  * The calss extends {@link RewriteRule} for Apache HTTP server. It provides
@@ -45,9 +46,9 @@ public class ApacheRewriteRule extends RewriteRule {
      * where: <ul> <li>{@code ^/tmv/toyota/([^/]*)$} is a pattern <li> {@code http://127.0.0.1:8080$0} is a substitution
      * <li> {@code P} is an option </ul>
      *
-     * @param pattern pattern.
+     * @param pattern      pattern.
      * @param substitution substitution.
-     * @param options options.
+     * @param options      options.
      */
     public ApacheRewriteRule(String pattern, String substitution, String... options) {
         super(pattern, substitution, options);
@@ -62,7 +63,7 @@ public class ApacheRewriteRule extends RewriteRule {
     @Override
     public String build() {
         return MessageFormat
-            .format(APACHE_RULE_PATTERN, getPattern(), getSubstitution(), buildOptionsList(getOptions())).trim();
+                .format(APACHE_RULE_PATTERN, getPattern(), getSubstitution(), buildOptionsList(getOptions())).trim();
     }
 
     /**
@@ -72,7 +73,7 @@ public class ApacheRewriteRule extends RewriteRule {
      * @return list of rules in string format.
      */
     private String buildOptionsList(String[] options) {
-        if(options != null && options.length > 0) {
+        if (options != null && options.length > 0) {
             return "[" + StringUtils.join(options, ",") + "]";
         }
         return "";

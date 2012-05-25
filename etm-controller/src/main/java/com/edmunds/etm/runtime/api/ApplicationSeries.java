@@ -133,19 +133,19 @@ public class ApplicationSeries {
         Validate.notNull(application);
         if (!application.getName().equals(name)) {
             String message = String
-                .format("Application name '%s' does not match series name '%s'", application.getName(), name);
+                    .format("Application name '%s' does not match series name '%s'", application.getName(), name);
             throw new IllegalArgumentException(message);
         }
 
         final Application previous = applicationsByVersion.get(application.getVersion());
 
         // If the previous version of this app was active so should this version be.
-        if (previous!= null && previous.isActive()) {
+        if (previous != null && previous.isActive()) {
             application = new Application(application, true);
         }
 
         // Create a mutable copy of the active versions map.
-        final TreeMap<ApplicationVersion,Application> temp = Maps.newTreeMap(applicationsByVersion);
+        final TreeMap<ApplicationVersion, Application> temp = Maps.newTreeMap(applicationsByVersion);
 
         // Add the new version.
         temp.put(application.getVersion(), application);

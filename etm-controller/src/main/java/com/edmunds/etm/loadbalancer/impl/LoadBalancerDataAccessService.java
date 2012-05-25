@@ -22,14 +22,15 @@ import com.edmunds.etm.runtime.api.Application;
 import com.edmunds.etm.runtime.impl.ApplicationRepository;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import org.apache.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
 import java.rmi.RemoteException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.apache.log4j.Logger;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 
 /**
  * The LoadBalancerDataAccessService provides thread-safe access to load balancer data.
@@ -72,7 +73,7 @@ public class LoadBalancerDataAccessService {
      */
     protected Map<String, AvailabilityStatus> readAvailabilityStatus() {
 
-        if(logger.isDebugEnabled()) {
+        if (logger.isDebugEnabled()) {
             logger.debug("Reading availability status from load balancer");
         }
 
@@ -80,21 +81,21 @@ public class LoadBalancerDataAccessService {
         Set<Application> applications = applicationRepository.getAllApplications();
         List<String> serverNames = Lists.newArrayListWithCapacity(applications.size());
 
-        for(Application app : applications) {
-            if(app.hasVirtualServer()) {
+        for (Application app : applications) {
+            if (app.hasVirtualServer()) {
                 serverNames.add(app.getVirtualServerName());
             }
         }
 
-        if(loadBalancerConnection.connect()) {
+        if (loadBalancerConnection.connect()) {
 
             // Try to get availability status in a bulk operation first
             try {
                 statusMap = loadBalancerConnection.getAvailabilityStatus(serverNames);
-            } catch(VirtualServerNotFoundException e) {
+            } catch (VirtualServerNotFoundException e) {
                 // Fall back to incremental operations
                 statusMap = readAvailabilityStatusIncrementally(serverNames);
-            } catch(RemoteException e) {
+            } catch (RemoteException e) {
                 logger.error("Unable to read virtual server status", e);
                 statusMap = Maps.newHashMap();
             }
@@ -110,17 +111,17 @@ public class LoadBalancerDataAccessService {
 
         Map<String, AvailabilityStatus> statusMap = Maps.newHashMapWithExpectedSize(serverNames.size());
 
-        for(String name : serverNames) {
+        for (String name : serverNames) {
             try {
                 Map<String, AvailabilityStatus> result;
                 result = loadBalancerConnection.getAvailabilityStatus(Collections.singletonList(name));
                 AvailabilityStatus status = result.get(name);
-                if(status != null) {
+                if (status != null) {
                     statusMap.put(name, status);
                 }
-            } catch(VirtualServerNotFoundException e) {
+            } catch (VirtualServerNotFoundException e) {
                 logger.error(String.format("Availability status not found for server %s", name), e);
-            } catch(RemoteException e) {
+            } catch (RemoteException e) {
                 logger.error("Unable to read virtual server status", e);
             }
         }
@@ -150,7 +151,7 @@ public class LoadBalancerDataAccessService {
 
         public synchronized AvailabilityStatus getAvailabilityStatus(String serverName) {
 
-            if(isExpired() || !cache.containsKey(serverName)) {
+            if (isExpired() || !cache.containsKey(serverName)) {
                 refreshCache();
             }
 
@@ -164,7 +165,7 @@ public class LoadBalancerDataAccessService {
 
         private void refreshCache() {
             // Throttle the refresh rate
-            if(lastRefresh + MIN_REFRESH_MILLIS > System.currentTimeMillis()) {
+            if (lastRefresh + MIN_REFRESH_MILLIS > System.currentTimeMillis()) {
                 return;
             }
             cache = readAvailabilityStatus();

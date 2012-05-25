@@ -19,10 +19,6 @@ import com.edmunds.etm.common.api.UrlToken;
 import com.edmunds.etm.common.impl.UrlTokenRepository;
 import com.edmunds.etm.rules.impl.UrlTokenDictionary;
 import com.edmunds.etm.rules.impl.UrlTokenMonitor;
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 import org.apache.click.Context;
 import org.apache.click.control.Column;
 import org.apache.click.control.Decorator;
@@ -31,6 +27,11 @@ import org.apache.click.dataprovider.DataProvider;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Displays active and default URL tokens.
@@ -68,7 +69,7 @@ public class UrlTokensPage extends BorderPage {
 
         try {
             tokens = tokenRepository.readTokensFromFile(file);
-        } catch(IOException e) {
+        } catch (IOException e) {
             getContext().setFlashAttribute("error", e.getMessage());
             tokens = new ArrayList<UrlToken>();
         }
@@ -126,5 +127,4 @@ public class UrlTokensPage extends BorderPage {
 
         return table;
     }
-
 }

@@ -22,9 +22,6 @@ import com.edmunds.etm.common.api.RuleSetDeploymentResult;
 import com.edmunds.etm.system.impl.AgentMonitor;
 import com.edmunds.etm.web.panel.AgentDetailPanel;
 import com.edmunds.etm.web.util.EtmFormat;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
 import org.apache.click.ActionListener;
 import org.apache.click.Context;
 import org.apache.click.Control;
@@ -36,6 +33,10 @@ import org.apache.click.dataprovider.DataProvider;
 import org.apache.commons.lang.Validate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 
 /**
  * Displays the currently connected agents.
@@ -154,15 +155,15 @@ public class AgentsPage extends BorderPage {
 
         try {
             agentId = UUID.fromString(id);
-        } catch(IllegalArgumentException e) {
+        } catch (IllegalArgumentException e) {
             return null;
         }
 
         AgentInstance match = null;
 
         Set<AgentInstance> agents = agentMonitor.getConnectedAgents();
-        for(AgentInstance agent : agents) {
-            if(agent.getId().equals(agentId)) {
+        for (AgentInstance agent : agents) {
+            if (agent.getId().equals(agentId)) {
                 match = agent;
             }
         }
@@ -178,12 +179,12 @@ public class AgentsPage extends BorderPage {
 
         @Override
         protected void addRowAttributes(Map<String, String> attributes, Object row, int rowIndex) {
-            if(!(row instanceof AgentInstance)) {
+            if (!(row instanceof AgentInstance)) {
                 return;
             }
 
             AgentInstance agent = (AgentInstance) row;
-            if(agent.equals(getSelectedAgent())) {
+            if (agent.equals(getSelectedAgent())) {
                 attributes.put("class", "selected");
             }
         }
@@ -193,7 +194,7 @@ public class AgentsPage extends BorderPage {
 
         @Override
         public String render(Object object, Context context) {
-            if(!(object instanceof AgentInstance)) {
+            if (!(object instanceof AgentInstance)) {
                 return "";
             }
 
@@ -209,18 +210,18 @@ public class AgentsPage extends BorderPage {
     private class LastDeploymentResultDecorator implements Decorator {
         @Override
         public String render(Object object, Context context) {
-            if(!(object instanceof AgentInstance)) {
+            if (!(object instanceof AgentInstance)) {
                 return "";
             }
 
             AgentInstance agent = (AgentInstance) object;
             RuleSetDeploymentEvent event = agent.getLastDeploymentEvent();
-            if(event == null) {
+            if (event == null) {
                 return "";
             }
 
             RuleSetDeploymentResult result = event.getResult();
-            if(result == null) {
+            if (result == null) {
                 result = RuleSetDeploymentResult.UNKNOWN;
             }
             return createResultDiv(result);
@@ -230,7 +231,7 @@ public class AgentsPage extends BorderPage {
             Validate.notNull(result, "Result is null");
 
             String cssClass;
-            switch(result) {
+            switch (result) {
                 case OK:
                     cssClass = "statusOk";
                     break;

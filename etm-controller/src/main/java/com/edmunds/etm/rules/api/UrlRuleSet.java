@@ -18,6 +18,8 @@ package com.edmunds.etm.rules.api;
 import com.edmunds.etm.management.api.MavenModule;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import org.apache.log4j.Logger;
+
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -25,7 +27,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
-import org.apache.log4j.Logger;
 
 /**
  * Represents an active rule set. <p/> Provides the methods for merging in new rules and ordering them for config
@@ -106,13 +107,13 @@ public class UrlRuleSet {
      * @return true if the merge succeeds.
      */
     private boolean mergeRulesInternal(Collection<UrlRule> newRules) {
-        for(UrlRule newRule : newRules) {
+        for (UrlRule newRule : newRules) {
 
             boolean unblockedNewRule = true;
 
-            for(UrlRule existingRule : rules) {
+            for (UrlRule existingRule : rules) {
                 final RuleComparison comparison = newRule.compareTo(existingRule);
-                switch(comparison) {
+                switch (comparison) {
                     case DISTINCT:
                         // No Action, the rules are DISTINCT move on to the next comparison.
                         break;
@@ -134,14 +135,14 @@ public class UrlRuleSet {
                         break;
                     default:
                         logger.info("Conflict (" + comparison + ") detected between rules," +
-                            " Existing: " + existingRule.getMavenModule() + "=[" + existingRule.getRule() + "]" +
-                            " New: " + newRule.getMavenModule() + "=[" + newRule.getRule() + "]");
+                                " Existing: " + existingRule.getMavenModule() + "=[" + existingRule.getRule() + "]" +
+                                " New: " + newRule.getMavenModule() + "=[" + newRule.getRule() + "]");
 
                         return false;
                 }
             }
 
-            if(unblockedNewRule) {
+            if (unblockedNewRule) {
                 unblockedRules.add(newRule);
             }
         }
@@ -154,11 +155,11 @@ public class UrlRuleSet {
 
     public void deleteRules(MavenModule mavenModule) {
         final Iterator<UrlRule> it = rules.iterator();
-        while(it.hasNext()) {
+        while (it.hasNext()) {
             final UrlRule rule = it.next();
 
             // Is this a rule for the same maven module
-            if(rule.getMavenModule().equals(mavenModule)) {
+            if (rule.getMavenModule().equals(mavenModule)) {
                 // It is so remove it.
                 it.remove();
                 // If its an unblocked rule remove it.
@@ -178,18 +179,18 @@ public class UrlRuleSet {
 
         final Set<UrlRule> out = Sets.newLinkedHashSet();
         // The ready set is updated as part of the loop so we cannot use an iterator.
-        while(!ready.isEmpty()) {
+        while (!ready.isEmpty()) {
             final UrlRule current = ready.first();
             ready.remove(current);
             out.add(current);
 
-            if(localRulesBlockedByMe.containsKey(current)) {
+            if (localRulesBlockedByMe.containsKey(current)) {
                 unblockRules(current, ready, localRulesBlockedByMe, localRulesBlockingMe);
             }
         }
 
         // Have all rules been outputted?
-        if(rules.size() != out.size()) {
+        if (rules.size() != out.size()) {
             logger.error("Cyclic dependency detected in new rule set");
             return null;
         }
@@ -226,25 +227,25 @@ public class UrlRuleSet {
     public Set<BlockedUrlRule> getBlockedRules() {
         Map<UrlRule, Set<UrlRule>> rulesMap = deepCopyMapSet(rulesBlockingMe);
         Set<BlockedUrlRule> blockedRules = new HashSet<BlockedUrlRule>(rulesMap.size());
-        for(Map.Entry<UrlRule, Set<UrlRule>> entry : rulesMap.entrySet()) {
+        for (Map.Entry<UrlRule, Set<UrlRule>> entry : rulesMap.entrySet()) {
             blockedRules.add(new BlockedUrlRule(entry.getKey(), entry.getValue()));
         }
         return blockedRules;
     }
 
     private void unblockRules(
-        UrlRule current, SortedSet<UrlRule> ready, Map<UrlRule,
+            UrlRule current, SortedSet<UrlRule> ready, Map<UrlRule,
             Set<UrlRule>> localRulesBlockedByMe, Map<UrlRule, Set<UrlRule>> localRulesBlockingMe) {
 
         final Set<UrlRule> blockedRules = localRulesBlockedByMe.remove(current);
 
         // For each rule that was blocked by the rule that was just outputted
-        for(UrlRule blockedRule : blockedRules) {
+        for (UrlRule blockedRule : blockedRules) {
             final Set<UrlRule> blockingRules = localRulesBlockingMe.get(blockedRule);
             blockingRules.remove(current);
 
             // Is the rule now unblocked?
-            if(blockingRules.isEmpty()) {
+            if (blockingRules.isEmpty()) {
                 // If so it can be outputted as soon as it is alphabetically possible.
                 ready.add(blockedRule);
             }
@@ -254,7 +255,7 @@ public class UrlRuleSet {
     private <K, V> void addToMapSet(K key, V value, Map<K, Set<V>> map) {
         Set<V> values = map.get(key);
 
-        if(values == null) {
+        if (values == null) {
             values = Sets.newHashSet();
             map.put(key, values);
         }
@@ -263,19 +264,19 @@ public class UrlRuleSet {
     }
 
     private void bidirectionalMapRemove(
-        UrlRule rule, Map<UrlRule, Set<UrlRule>> primary, Map<UrlRule, Set<UrlRule>> reverse,
-        boolean addUnblocked) {
+            UrlRule rule, Map<UrlRule, Set<UrlRule>> primary, Map<UrlRule, Set<UrlRule>> reverse,
+            boolean addUnblocked) {
 
         final Set<UrlRule> others = primary.remove(rule);
 
-        if(others != null) {
-            for(UrlRule other : others) {
+        if (others != null) {
+            for (UrlRule other : others) {
                 final Set<UrlRule> otherSet = reverse.get(other);
                 otherSet.remove(rule);
 
                 // Did we remove the last entry in the set?
-                if(otherSet.isEmpty()) {
-                    if(addUnblocked) {
+                if (otherSet.isEmpty()) {
+                    if (addUnblocked) {
                         unblockedRules.add(other);
                     }
                     reverse.remove(other);
@@ -287,7 +288,7 @@ public class UrlRuleSet {
     private <K, V> Map<K, Set<V>> deepCopyMapSet(Map<K, Set<V>> map) {
         final Map<K, Set<V>> result = Maps.newHashMap();
 
-        for(Map.Entry<K, Set<V>> entry : map.entrySet()) {
+        for (Map.Entry<K, Set<V>> entry : map.entrySet()) {
             result.put(entry.getKey(), Sets.newHashSet(entry.getValue()));
         }
 

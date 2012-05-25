@@ -22,7 +22,7 @@ import org.apache.click.control.PageLink;
 /**
  * @author Ryan Holmes
  */
-public class MenuPageLink extends PageLink{
+public class MenuPageLink extends PageLink {
 
     public MenuPageLink(String name) {
         super(name);

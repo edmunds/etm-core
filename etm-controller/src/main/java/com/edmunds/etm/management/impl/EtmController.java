@@ -25,17 +25,19 @@ import com.edmunds.etm.system.impl.FailoverMonitor;
 import com.edmunds.zookeeper.connection.ZooKeeperConnection;
 import com.edmunds.zookeeper.connection.ZooKeeperNodeInitializer;
 import com.google.common.collect.Lists;
-import java.util.Collections;
-import java.util.List;
 import org.apache.log4j.Logger;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.util.Collections;
+import java.util.List;
+
 /**
- * The main ETM controller class, responsible for initializating the application. <p/> This class sets up the ZooKeeper
- * node structure used throughout the system and connects to the ZooKeeper server.
+ * The main ETM controller class, responsible for initializating the application.
+ * <p/>
+ * This class sets up the ZooKeeper node structure used throughout the system and connects to the ZooKeeper server.
  *
  * @author Ryan Holmes
  * @author David Trott
@@ -69,29 +71,29 @@ public class EtmController implements InitializingBean, DisposableBean {
     /**
      * Autowired constructor.
      *
-     * @param connection the ZooKeeper connection
-     * @param controllerPaths paths for the controller
-     * @param clientPaths paths for the clients
-     * @param agentPaths paths for the agents
-     * @param clientMonitor client manager
-     * @param vipMonitor vip manager
-     * @param failoverMonitor failover monitor
-     * @param agentMonitor agent monitor
+     * @param connection        the ZooKeeper connection
+     * @param controllerPaths   paths for the controller
+     * @param clientPaths       paths for the clients
+     * @param agentPaths        paths for the agents
+     * @param clientMonitor     client manager
+     * @param vipMonitor        vip manager
+     * @param failoverMonitor   failover monitor
+     * @param agentMonitor      agent monitor
      * @param controllerMonitor etm controller monitor
-     * @param urlTokenMonitor url token monitor
+     * @param urlTokenMonitor   url token monitor
      */
     @Autowired
     public EtmController(
-        ZooKeeperConnection connection,
-        ControllerPaths controllerPaths,
-        ClientPaths clientPaths,
-        AgentPaths agentPaths,
-        ClientMonitor clientMonitor,
-        VipMonitor vipMonitor,
-        FailoverMonitor failoverMonitor,
-        AgentMonitor agentMonitor,
-        ControllerMonitor controllerMonitor,
-        UrlTokenMonitor urlTokenMonitor) {
+            ZooKeeperConnection connection,
+            ControllerPaths controllerPaths,
+            ClientPaths clientPaths,
+            AgentPaths agentPaths,
+            ClientMonitor clientMonitor,
+            VipMonitor vipMonitor,
+            FailoverMonitor failoverMonitor,
+            AgentMonitor agentMonitor,
+            ControllerMonitor controllerMonitor,
+            UrlTokenMonitor urlTokenMonitor) {
         this.connection = connection;
         this.controllerPaths = controllerPaths;
         this.clientPaths = clientPaths;
@@ -111,7 +113,7 @@ public class EtmController implements InitializingBean, DisposableBean {
      */
     @Override
     public void afterPropertiesSet() throws Exception {
-        if(etmInitialized) {
+        if (etmInitialized) {
             final String msg = "ETM Critical Error: Double initialization detected - Shutting down the JVM";
             System.err.println(msg);
             logger.fatal(msg);
@@ -141,7 +143,7 @@ public class EtmController implements InitializingBean, DisposableBean {
         logger.info("*** Edmunds Traffic Manager Shutting Down ***");
 
         // Close the ZooKeeper connection
-        if(connection != null) {
+        if (connection != null) {
             connection.close();
             Thread.sleep(ZOOKEEPER_CONNECTION_CLOSE_WAIT);
         }

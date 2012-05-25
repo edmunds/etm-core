@@ -55,16 +55,16 @@ public abstract class RewriteRule {
      * where: <ul> <li>{@code ^/tmv/toyota/([^/]*)$} is a pattern <li> {@code http://127.0.0.1:8080$0} is a substitution
      * <li> {@code P} is an option </ul>
      *
-     * @param pattern pattern.
+     * @param pattern      pattern.
      * @param substitution substitution.
-     * @param options options.
+     * @param options      options.
      */
     public RewriteRule(String pattern, String substitution, String... options) {
-        if(StringUtils.isEmpty(pattern)) {
+        if (StringUtils.isEmpty(pattern)) {
             throw new IllegalArgumentException("The pattern can't be empty or null.");
         }
 
-        if(StringUtils.isEmpty(substitution)) {
+        if (StringUtils.isEmpty(substitution)) {
             throw new IllegalArgumentException("The Substitution can't be empty or null.");
         }
 
@@ -115,19 +115,19 @@ public abstract class RewriteRule {
      */
     @Override
     public boolean equals(Object o) {
-        if(this == o) {
+        if (this == o) {
             return true;
         }
-        if(o == null || getClass() != o.getClass()) {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
 
         RewriteRule that = (RewriteRule) o;
 
-        if(pattern != null ? !pattern.equals(that.pattern) : that.pattern != null) {
+        if (pattern != null ? !pattern.equals(that.pattern) : that.pattern != null) {
             return false;
         }
-        if(substitution != null ? !substitution.equals(that.substitution) : that.substitution != null) {
+        if (substitution != null ? !substitution.equals(that.substitution) : that.substitution != null) {
             return false;
         }
 

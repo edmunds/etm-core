@@ -15,9 +15,15 @@
  */
 package com.edmunds.etm.web.panel;
 
+import com.edmunds.etm.loadbalancer.api.PoolMember;
 import com.edmunds.etm.management.api.HttpMonitor;
 import com.edmunds.etm.runtime.api.Application;
 import org.apache.click.control.Panel;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 
 /**
  * Displays application details.
@@ -32,7 +38,7 @@ public class ApplicationDetailPanel extends Panel {
     }
 
     public void setApplication(Application application) {
-        if(application == null) {
+        if (application == null) {
             return;
         }
         addModel("name", application.getName());
@@ -40,13 +46,24 @@ public class ApplicationDetailPanel extends Panel {
         addModel("active", application.isActive());
         addModel("rules", application.getRules());
 
-        if(application.hasVirtualServer()) {
+        if (application.hasVirtualServer()) {
+
+            // add virtual server address
             addModel("virtualServerAddress", application.getVirtualServerAddress());
-            addModel("virtualServerPoolMembers", application.getVirtualServerPoolMembers());
+
+            // add pool members
+            List<PoolMember> poolMembers = new ArrayList<PoolMember>(application.getVirtualServerPoolMembers());
+            Collections.sort(poolMembers, new Comparator<PoolMember>() {
+                public int compare(PoolMember m1, PoolMember m2) {
+                    return m1.toString().compareTo(m2.toString());
+                }
+            });
+            addModel("virtualServerPoolMembers", poolMembers);
         }
 
+        // add http monitor
         HttpMonitor httpMonitor = application.getHttpMonitor();
-        if(httpMonitor != null) {
+        if (httpMonitor != null) {
             addModel("httpMonitor", httpMonitor);
         }
     }

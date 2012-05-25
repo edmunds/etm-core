@@ -36,5 +36,4 @@ public class ZooKeeperConfigurationPanel extends Panel {
         addModel("pathPrefix", defaultString(zooKeeperConfig.getPathPrefix()));
         addModel("dnsRetryCount", zooKeeperConfig.getDnsRetryCount());
     }
-
 }

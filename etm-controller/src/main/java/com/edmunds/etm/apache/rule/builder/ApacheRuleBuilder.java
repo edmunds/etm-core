@@ -17,6 +17,10 @@ package com.edmunds.etm.apache.rule.builder;
 
 import com.edmunds.etm.common.util.RegexUtil;
 import com.edmunds.etm.rules.api.UrlTokenResolver;
+import org.apache.commons.lang.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -24,11 +28,12 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import org.apache.commons.lang.StringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 
-import static com.edmunds.etm.rules.util.Constants.*;
+import static com.edmunds.etm.rules.util.Constants.ANY_SYMBOLS_EXCEPT_SLASH_REGEXP;
+import static com.edmunds.etm.rules.util.Constants.ANY_SYMBOLS_REGEXP;
+import static com.edmunds.etm.rules.util.Constants.ASTERISK;
+import static com.edmunds.etm.rules.util.Constants.DOUBLE_ASTERISK;
+import static com.edmunds.etm.rules.util.Constants.SLASH;
 import static org.apache.commons.lang.StringUtils.EMPTY;
 
 /**
@@ -78,7 +83,7 @@ public class ApacheRuleBuilder {
     }
 
     public String build(String rule) {
-        if(rule == null || rule.isEmpty()) {
+        if (rule == null || rule.isEmpty()) {
             return rule;
         }
         String replacedString = replaceSpecialSymbols(rule);
@@ -104,10 +109,10 @@ public class ApacheRuleBuilder {
     private String replaceSpecialSymbols(String rule) {
         String[] tokens = removeEmptyTokens(rule.split(SLASH));
         List<String> changedTokens = new LinkedList<String>();
-        for(String token : tokens) {
-            if(transformationMap.containsKey(token)) {
+        for (String token : tokens) {
+            if (transformationMap.containsKey(token)) {
                 token = transformationMap.get(token);
-            } else if(urlTokenResolver.isTokenDefined(token)) {
+            } else if (urlTokenResolver.isTokenDefined(token)) {
                 token = urlTokenResolver.resolveToken(token);
             } else {
                 token = RegexUtil.escapeRegex(token);
@@ -115,7 +120,7 @@ public class ApacheRuleBuilder {
             }
             changedTokens.add(token);
         }
-        if(rule.endsWith(SLASH)) {
+        if (rule.endsWith(SLASH)) {
             changedTokens.add(EMPTY);
         }
         return StringUtils.join(changedTokens, SLASH);

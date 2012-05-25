@@ -29,18 +29,19 @@ import com.edmunds.zookeeper.treewatcher.ZooKeeperTreeNode;
 import com.edmunds.zookeeper.treewatcher.ZooKeeperTreeWatcher;
 import com.edmunds.zookeeper.util.ZooKeeperUtils;
 import com.google.common.collect.Sets;
-import java.io.IOException;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-import java.util.Collection;
-import java.util.Set;
-import java.util.UUID;
 import org.apache.log4j.Logger;
 import org.apache.zookeeper.AsyncCallback;
 import org.apache.zookeeper.KeeperException.Code;
 import org.apache.zookeeper.data.Stat;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.util.Collection;
+import java.util.Set;
+import java.util.UUID;
 
 /**
  * Monitors all connected ETM controllers and maintains the connected node for this controller.
@@ -95,17 +96,17 @@ public class ControllerMonitor implements ZooKeeperConnectionListener, FailoverL
 
     @Override
     public void onConnectionStateChanged(ZooKeeperConnectionState state) {
-        if(state == ZooKeeperConnectionState.INITIALIZED) {
+        if (state == ZooKeeperConnectionState.INITIALIZED) {
             controllerWatcher.initialize();
             createControllerNode();
-        } else if(state == ZooKeeperConnectionState.EXPIRED) {
+        } else if (state == ZooKeeperConnectionState.EXPIRED) {
             controllerNodePath = null;
         }
     }
 
     @Override
     public void onFailoverStateChanged(FailoverMonitor monitor) {
-        if(nodeCreateInProgress) {
+        if (nodeCreateInProgress) {
             nodeUpdatePending = true;
         } else {
             updateControllerNode();
@@ -134,9 +135,9 @@ public class ControllerMonitor implements ZooKeeperConnectionListener, FailoverL
         Collection<ZooKeeperTreeNode> childNodes = rootNode.getChildren().values();
         Set<ControllerInstance> controllers = Sets.newHashSetWithExpectedSize(childNodes.size());
 
-        for(ZooKeeperTreeNode node : childNodes) {
+        for (ZooKeeperTreeNode node : childNodes) {
             ControllerInstance instance = bytesToControllerInstance(node.getData());
-            if(instance != null) {
+            if (instance != null) {
                 controllers.add(instance);
             }
         }
@@ -152,7 +153,7 @@ public class ControllerMonitor implements ZooKeeperConnectionListener, FailoverL
      */
     protected void createControllerNode() {
 
-        if(controllerNodePath != null || nodeCreateInProgress) {
+        if (controllerNodePath != null || nodeCreateInProgress) {
             return;
         }
         nodeCreateInProgress = true;
@@ -173,10 +174,10 @@ public class ControllerMonitor implements ZooKeeperConnectionListener, FailoverL
     }
 
     protected void onControllerNodeCreated(Code rc, String path, String name) {
-        if(rc == Code.OK) {
+        if (rc == Code.OK) {
             controllerNodePath = name;
             logger.debug(String.format("Created controller node: %s", name));
-        } else if(ZooKeeperUtils.isRetryableError(rc)) {
+        } else if (ZooKeeperUtils.isRetryableError(rc)) {
             logger.warn(String.format("Error %s while creating controller node %s, retrying", rc, path));
             createControllerNode();
         } else {
@@ -187,13 +188,13 @@ public class ControllerMonitor implements ZooKeeperConnectionListener, FailoverL
 
         nodeCreateInProgress = false;
 
-        if(nodeUpdatePending) {
+        if (nodeUpdatePending) {
             updateControllerNode();
         }
     }
 
     protected void updateControllerNode() {
-        if(controllerNodePath == null) {
+        if (controllerNodePath == null) {
             return;
         }
 
@@ -210,7 +211,7 @@ public class ControllerMonitor implements ZooKeeperConnectionListener, FailoverL
     }
 
     protected void onSetInstanceNodeData(Code rc, String path) {
-        if(rc != Code.OK) {
+        if (rc != Code.OK) {
             logger.error(String.format("Error %s while updating controller node: %s", rc, path));
         }
         nodeUpdatePending = false;
@@ -237,7 +238,7 @@ public class ControllerMonitor implements ZooKeeperConnectionListener, FailoverL
     private static String getIpAddress() {
         try {
             return InetAddress.getLocalHost().getHostAddress();
-        } catch(UnknownHostException e) {
+        } catch (UnknownHostException e) {
             String message = "Could not get IP address for localhost";
             logger.error(message, e);
             throw new RuntimeException(e);
@@ -249,7 +250,7 @@ public class ControllerMonitor implements ZooKeeperConnectionListener, FailoverL
         byte[] data = new byte[0];
         try {
             data = objectSerializer.writeValue(dto);
-        } catch(IOException e) {
+        } catch (IOException e) {
             logger.error(String.format("Failed to serialize ControllerInstanceDto: %s", dto), e);
         }
 
@@ -260,7 +261,7 @@ public class ControllerMonitor implements ZooKeeperConnectionListener, FailoverL
         ControllerInstanceDto dto = null;
         try {
             dto = objectSerializer.readValue(data, ControllerInstanceDto.class);
-        } catch(IOException e) {
+        } catch (IOException e) {
             logger.error("Failed to deserialize ControllerInstanceDto", e);
         }
 

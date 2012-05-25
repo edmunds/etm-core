@@ -17,12 +17,13 @@ package com.edmunds.etm.rules.impl;
 
 import com.edmunds.etm.common.api.UrlToken;
 import com.edmunds.etm.rules.api.UrlTokenResolver;
+import org.apache.commons.lang.Validate;
+import org.springframework.stereotype.Component;
+
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.commons.lang.Validate;
-import org.springframework.stereotype.Component;
 
 /**
  * A dictionary of {@link UrlToken} objects used to resolve (or "expand") token symbols in ETM URL rules. The tokens are
@@ -57,7 +58,7 @@ public class UrlTokenDictionary implements UrlTokenResolver {
      */
     public void addAll(Collection<UrlToken> tokens) {
         Validate.notNull(tokens, "URL token collection is null");
-        for(UrlToken token : tokens) {
+        for (UrlToken token : tokens) {
             add(token);
         }
     }
@@ -87,7 +88,7 @@ public class UrlTokenDictionary implements UrlTokenResolver {
      */
     public String resolveToken(String tokenSymbol) {
         UrlToken token = tokenDefinitions.get(tokenSymbol);
-        if(token == null) {
+        if (token == null) {
             return null;
         }
         return token.toRegex();

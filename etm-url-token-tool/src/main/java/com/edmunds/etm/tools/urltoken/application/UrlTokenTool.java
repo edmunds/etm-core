@@ -42,7 +42,7 @@ public class UrlTokenTool implements ZooKeeperConnectionListener {
     private final ZooKeeperConnection connection;
     private final CommandLocator commandLocator;
     private final OutputWriter outputWriter;
-    private final Integer lock = -1;
+    private final Object lock = new Object();
 
     private Command command;
     private String[] arguments;

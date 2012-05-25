@@ -66,10 +66,12 @@ public class ApacheConfigurationBuilder implements WebServerConfigurationBuilder
         this.activeRuleSetDigest = "";
     }
 
+    @Override
     public byte[] getActiveRuleSetData() {
         return activeRuleSetData;
     }
 
+    @Override
     public String getActiveRuleSetDigest() {
         return activeRuleSetDigest;
     }
@@ -119,8 +121,8 @@ public class ApacheConfigurationBuilder implements WebServerConfigurationBuilder
             for (UrlRule rule : rules) {
                 String transformedRule = ruleBuilder.build(rule.getRule());
                 RewriteRule rewriteRule = new ApacheRewriteRule(transformedRule,
-                    rule.getVipAddress(),
-                    ApacheRewriteRule.PROXY_OPTION);
+                        rule.getVipAddress(),
+                        ApacheRewriteRule.PROXY_OPTION);
                 config.add(rewriteRule);
             }
 
@@ -151,8 +153,9 @@ public class ApacheConfigurationBuilder implements WebServerConfigurationBuilder
                 onConfigurationSetData(Code.get(rc), path, configData);
             }
         };
-
         connection.setData(nodePath, configData, -1, cb, null);
+
+        updateActiveRuleSet(configData);
 
         if (logger.isDebugEnabled()) {
             String message = String.format("New Apache configuration generated: \n%s", new String(configData));
@@ -162,7 +165,7 @@ public class ApacheConfigurationBuilder implements WebServerConfigurationBuilder
 
     protected void onConfigurationSetData(Code rc, String path, byte[] data) {
         if (rc == Code.OK) {
-            updateActiveRuleSet(data);
+            return;
         } else if (ZooKeeperUtils.isRetryableError(rc)) {
 
             // Retry recoverable errors

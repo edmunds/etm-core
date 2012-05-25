@@ -34,4 +34,18 @@ public interface WebServerConfigurationBuilder {
      * @param rules set of rules.
      */
     void build(Collection<UrlRule> rules);
+
+    /**
+     * Gets the active rule set configuration data.
+     *
+     * @return active rule set data
+     */
+    byte[] getActiveRuleSetData();
+
+    /**
+     * Get the digest of the active rule set configuration.
+     *
+     * @return active rule set digest
+     */
+    String getActiveRuleSetDigest();
 }

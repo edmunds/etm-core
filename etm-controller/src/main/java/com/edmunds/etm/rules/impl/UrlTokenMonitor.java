@@ -29,16 +29,17 @@ import com.edmunds.zookeeper.treewatcher.ZooKeeperTreeNode;
 import com.edmunds.zookeeper.treewatcher.ZooKeeperTreeWatcher;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import org.apache.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+import org.springframework.web.context.ServletContextAware;
+
+import javax.servlet.ServletContext;
 import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
-import javax.servlet.ServletContext;
-import org.apache.log4j.Logger;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
-import org.springframework.web.context.ServletContextAware;
 
 /**
  * Repository for the values of fixed UrlToken objects.
@@ -78,7 +79,6 @@ public class UrlTokenMonitor implements ZooKeeperConnectionListener, ServletCont
         this.tokenDictionary = tokenDictionary;
         this.tokenRepository = tokenRepository;
 
-
         String nodePath = controllerPaths.getUrlTokens();
         this.tokenNodeWatcher = new ZooKeeperTreeWatcher(connection, 0, nodePath, cb);
 
@@ -94,7 +94,7 @@ public class UrlTokenMonitor implements ZooKeeperConnectionListener, ServletCont
 
     @Override
     public void onConnectionStateChanged(ZooKeeperConnectionState state) {
-        if(state == ZooKeeperConnectionState.INITIALIZED) {
+        if (state == ZooKeeperConnectionState.INITIALIZED) {
             tokenNodeWatcher.initialize();
         }
     }
@@ -110,14 +110,14 @@ public class UrlTokenMonitor implements ZooKeeperConnectionListener, ServletCont
 
     private void onTokenTreeChanged(ZooKeeperTreeNode tokenNode) {
 
-        if(tokenNode != null) {
+        if (tokenNode != null) {
             Collection<ZooKeeperTreeNode> childNodes = tokenNode.getChildren().values();
             Set<UrlTokenDto> tokenDtos = Sets.newHashSetWithExpectedSize(childNodes.size());
-            for(ZooKeeperTreeNode node : childNodes) {
+            for (ZooKeeperTreeNode node : childNodes) {
                 try {
                     UrlTokenDto dto = objectSerializer.readValue(node.getData(), UrlTokenDto.class);
                     tokenDtos.add(dto);
-                } catch(IOException e) {
+                } catch (IOException e) {
                     logger.error(String.format("Unable to deserialize UrlToken node: %s", node.getPath()));
                 }
             }
@@ -128,20 +128,20 @@ public class UrlTokenMonitor implements ZooKeeperConnectionListener, ServletCont
     private void processTokenDtos(Set<UrlTokenDto> dtos) {
 
         // load default tokens at startup if none are defined
-        if(!tokensInitialized && dtos.isEmpty()) {
+        if (!tokensInitialized && dtos.isEmpty()) {
             loadDefaultTokens();
             return;
         }
 
         // don't proceed if tokens are unchanged
-        if(tokensInitialized && dtos.equals(previousTokenDtos)) {
+        if (tokensInitialized && dtos.equals(previousTokenDtos)) {
             return;
         }
         previousTokenDtos = dtos;
 
         // update the token dictionary and notify listeners
         List<UrlToken> tokens = Lists.newArrayListWithCapacity(dtos.size());
-        for(UrlTokenDto dto : dtos) {
+        for (UrlTokenDto dto : dtos) {
             UrlToken token = UrlToken.readDto(dto);
             tokens.add(token);
         }
@@ -155,7 +155,7 @@ public class UrlTokenMonitor implements ZooKeeperConnectionListener, ServletCont
     private void processChangeEvent() {
         logger.info("URL tokens changed");
 
-        for(UrlTokenChangeListener listener : tokenChangeListeners) {
+        for (UrlTokenChangeListener listener : tokenChangeListeners) {
             listener.onUrlTokensChanged(tokenDictionary);
         }
     }
@@ -166,9 +166,8 @@ public class UrlTokenMonitor implements ZooKeeperConnectionListener, ServletCont
         File file = new File(contextPath + DEFAULT_TOKENS_XML_PATH);
         try {
             tokenRepository.loadTokensFromFile(file, true);
-        } catch(IOException e) {
+        } catch (IOException e) {
             logger.error("Unable to load default URL tokens", e);
         }
-
     }
 }

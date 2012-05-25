@@ -26,7 +26,7 @@ public interface FailoverListener {
 
     /**
      * Called whenever the failover state has changed.
-     *
+     * <p/>
      * * The failover monitor object provides a {@link com.edmunds.etm.system.impl.FailoverMonitor#getFailoverState()}
      * method that retrieves the current client vips in a thread-safe manner. This method should be always be used in
      * preference to storing a copy of the vips, which may become out of synch in a multithreaded environment.

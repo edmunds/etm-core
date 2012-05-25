@@ -45,19 +45,19 @@ public class InvalidUrlRule {
 
     @Override
     public boolean equals(Object o) {
-        if(this == o) {
+        if (this == o) {
             return true;
         }
-        if(!(o instanceof InvalidUrlRule)) {
+        if (!(o instanceof InvalidUrlRule)) {
             return false;
         }
 
         InvalidUrlRule that = (InvalidUrlRule) o;
 
-        if(!mavenModule.equals(that.mavenModule)) {
+        if (!mavenModule.equals(that.mavenModule)) {
             return false;
         }
-        if(!rule.equals(that.rule)) {
+        if (!rule.equals(that.rule)) {
             return false;
         }
 

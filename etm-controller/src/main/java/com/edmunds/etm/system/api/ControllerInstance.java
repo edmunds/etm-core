@@ -16,11 +16,12 @@
 package com.edmunds.etm.system.api;
 
 import com.edmunds.etm.common.thrift.ControllerInstanceDto;
+import org.apache.commons.lang.Validate;
+import org.apache.log4j.Logger;
+
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.UUID;
-import org.apache.commons.lang.Validate;
-import org.apache.log4j.Logger;
 
 /**
  * Represents an instance of an ETM controller process.
@@ -76,17 +77,16 @@ public class ControllerInstance {
      * @return host name
      */
     public String getHostName() {
-        if(hostName == null) {
+        if (hostName == null) {
             try {
                 InetAddress addr = InetAddress.getByName(ipAddress);
                 hostName = addr.getHostName();
-            } catch(UnknownHostException e) {
+            } catch (UnknownHostException e) {
                 return "Unknown";
             }
         }
         return hostName;
     }
-
 
     /**
      * Gets the application version.
@@ -117,10 +117,10 @@ public class ControllerInstance {
 
     @Override
     public boolean equals(Object o) {
-        if(this == o) {
+        if (this == o) {
             return true;
         }
-        if(!(o instanceof ControllerInstance)) {
+        if (!(o instanceof ControllerInstance)) {
             return false;
         }
 
@@ -153,14 +153,14 @@ public class ControllerInstance {
      * @return an ControllerInstance object
      */
     public static ControllerInstance readDto(ControllerInstanceDto dto) {
-        if(dto == null) {
+        if (dto == null) {
             return null;
         }
 
         UUID id = null;
         try {
             id = UUID.fromString(dto.getId());
-        } catch(IllegalArgumentException e) {
+        } catch (IllegalArgumentException e) {
             logger.error(String.format("Cannot parse UUID from dto: %s", dto), e);
             return null;
         }
@@ -171,7 +171,7 @@ public class ControllerInstance {
         FailoverState failoverState;
         try {
             failoverState = FailoverState.valueOf(dto.getFailoverState());
-        } catch(RuntimeException e) {
+        } catch (RuntimeException e) {
             logger.error("Invalid failover state read from DTO", e);
             failoverState = FailoverState.UNKNOWN;
         }
@@ -179,7 +179,7 @@ public class ControllerInstance {
         ControllerInstance obj = null;
         try {
             obj = new ControllerInstance(id, ipAddress, version, failoverState);
-        } catch(IllegalArgumentException e) {
+        } catch (IllegalArgumentException e) {
             logger.error("Invalid controller instance DTO", e);
         }
         return obj;
@@ -192,7 +192,7 @@ public class ControllerInstance {
      * @return a data transfer object
      */
     public static ControllerInstanceDto writeDto(ControllerInstance obj) {
-        if(obj == null) {
+        if (obj == null) {
             return null;
         }
 

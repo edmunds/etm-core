@@ -15,8 +15,6 @@
  */
 package com.edmunds.etm.rules.impl;
 
-import com.edmunds.etm.loadbalancer.impl.LoadBalancerController;
-import com.edmunds.etm.loadbalancer.impl.LoadBalancerControllerCallback;
 import com.edmunds.etm.management.api.ManagementVips;
 import com.edmunds.etm.management.api.MavenModule;
 import com.edmunds.etm.management.util.VipDeltaCalculator;
@@ -34,6 +32,7 @@ import com.edmunds.etm.system.impl.FailoverMonitor;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import org.apache.commons.lang.Validate;
 import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -52,7 +51,7 @@ import java.util.Set;
  * @author David Trott
  */
 @Service
-public class WebConfigurationManager implements LoadBalancerControllerCallback, UrlTokenChangeListener {
+public class WebConfigurationManager implements UrlTokenChangeListener {
 
     private static final Logger logger = Logger.getLogger(WebConfigurationManager.class);
 
@@ -73,21 +72,19 @@ public class WebConfigurationManager implements LoadBalancerControllerCallback, 
      * Constructor injection.
      *
      * @param applicationRepository the application repository
-     * @param configurationBuilder the configuration builder
-     * @param vipDeltaCalculator the vip delta logic
-     * @param failoverMonitor the failover monitor
-     * @param loadBalancerController the load balancer controller
-     * @param urlTokenMonitor the url token monitor
+     * @param configurationBuilder  the configuration builder
+     * @param vipDeltaCalculator    the vip delta logic
+     * @param failoverMonitor       the failover monitor
+     * @param urlTokenMonitor       the url token monitor
      */
     @Autowired
     public WebConfigurationManager(
 
-        ApplicationRepository applicationRepository,
-        WebServerConfigurationBuilder configurationBuilder,
-        VipDeltaCalculator vipDeltaCalculator,
-        FailoverMonitor failoverMonitor,
-        LoadBalancerController loadBalancerController,
-        UrlTokenMonitor urlTokenMonitor) {
+            ApplicationRepository applicationRepository,
+            WebServerConfigurationBuilder configurationBuilder,
+            VipDeltaCalculator vipDeltaCalculator,
+            FailoverMonitor failoverMonitor,
+            UrlTokenMonitor urlTokenMonitor) {
 
         this.applicationRepository = applicationRepository;
         this.configurationBuilder = configurationBuilder;
@@ -100,7 +97,6 @@ public class WebConfigurationManager implements LoadBalancerControllerCallback, 
         this.tokensInitialized = false;
 
         // Register for notifications
-        loadBalancerController.addCallback(this);
         urlTokenMonitor.addListener(this);
     }
 
@@ -109,15 +105,15 @@ public class WebConfigurationManager implements LoadBalancerControllerCallback, 
         this.tokenResolver = tokenResolver;
     }
 
-    @Override
-    public void onActiveVipsUpdated(LoadBalancerController loadBalancerController) {
-        logger.debug("activeVipsUpdated() called");
-
-        ManagementVips activeVips = loadBalancerController.getActiveVips();
-
-        if(activeVips == null) {
-            return;
-        }
+    /**
+     * Updates the configuration of the web proxy tier.
+     *
+     * @param activeVips active application vips
+     * @return digest of the new web proxy rule set
+     */
+    public String updateConfiguration(ManagementVips activeVips) {
+        logger.debug("updateConfiguration() called");
+        Validate.notNull(activeVips, "activeVips is null");
 
         // Get the vip delta
         ManagementVips deltaVips = vipDeltaCalculator.deltaWebTier(getPreviousVips(), activeVips);
@@ -125,19 +121,21 @@ public class WebConfigurationManager implements LoadBalancerControllerCallback, 
         // Update previous vips
         setPreviousVips(activeVips);
 
-        if(tokensInitialized && getFailoverState() == FailoverState.ACTIVE) {
+        if (tokensInitialized && getFailoverState() == FailoverState.ACTIVE) {
             updateRules(deltaVips);
         }
+
+        return configurationBuilder.getActiveRuleSetDigest();
     }
 
     @Override
     public void onUrlTokensChanged(UrlTokenResolver resolver) {
 
-        if(!tokensInitialized) {
+        if (!tokensInitialized) {
             tokensInitialized = true;
         }
 
-        if(getPreviousVips() != null && getFailoverState() == FailoverState.ACTIVE) {
+        if (getPreviousVips() != null && getFailoverState() == FailoverState.ACTIVE) {
             recreateRules();
         }
     }
@@ -232,7 +230,7 @@ public class WebConfigurationManager implements LoadBalancerControllerCallback, 
     private List<Application> getApplicationActivationOrder() {
         final Map<String, Application> applicationsByName = Maps.newHashMap();
 
-        for(Application application : applicationRepository.getActiveApplications()) {
+        for (Application application : applicationRepository.getActiveApplications()) {
             applicationsByName.put(application.getName(), application);
         }
 
@@ -255,9 +253,9 @@ public class WebConfigurationManager implements LoadBalancerControllerCallback, 
     /**
      * Adds the rules from the specified application into the active rule set.
      *
-     * @param app the application to be activated
+     * @param app           the application to be activated
      * @param activeRuleSet the rule set to add the rules to
-     * @param ignoredRules rules that have been ignored because they were invalid
+     * @param ignoredRules  rules that have been ignored because they were invalid
      * @return the updated rule set or the existing rule set if the change cannot be made.
      */
     private UrlRuleSet addRulesForApplication(
@@ -283,19 +281,19 @@ public class WebConfigurationManager implements LoadBalancerControllerCallback, 
         }
 
         // Check that we have at least one unique, valid rule
-        if(urlRules.isEmpty()) {
+        if (urlRules.isEmpty()) {
             return null;
         }
 
         final UrlRuleSet newRuleSet = activeRuleSet.mergeRules(urlRules);
 
         // Check for conflicts
-        if(newRuleSet == null) {
+        if (newRuleSet == null) {
             return null;
         }
 
         // Check for cyclic dependencies
-        if(newRuleSet.orderRules() == null) {
+        if (newRuleSet.orderRules() == null) {
             return null;
         }
 

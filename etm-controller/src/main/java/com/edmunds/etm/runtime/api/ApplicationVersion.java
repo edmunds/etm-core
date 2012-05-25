@@ -96,11 +96,11 @@ public class ApplicationVersion implements Comparable<ApplicationVersion>, Seria
 
                 if (otherQualifier != null) {
                     if ((qualifier.length() > otherQualifier.length())
-                        && qualifier.startsWith(otherQualifier)) {
+                            && qualifier.startsWith(otherQualifier)) {
                         // here, the longer one that otherwise match is considered older
                         result = -1;
                     } else if ((qualifier.length() < otherQualifier.length())
-                        && otherQualifier.startsWith(qualifier)) {
+                            && otherQualifier.startsWith(qualifier)) {
                         // here, the longer one that otherwise match is considered older
                         result = 1;
                     } else {

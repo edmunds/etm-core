@@ -32,7 +32,7 @@ public class AgentDetailPanel extends Panel {
     }
 
     public void setAgent(AgentInstance agent) {
-        if(agent == null) {
+        if (agent == null) {
             return;
         }
         addModel("hostName", agent.getHostName());
@@ -41,12 +41,12 @@ public class AgentDetailPanel extends Panel {
         addModel("activeRuleSetDigest", agent.getActiveRuleSetDigest());
 
         RuleSetDeploymentEvent lastDeployment = agent.getLastDeploymentEvent();
-        if(lastDeployment != null) {
+        if (lastDeployment != null) {
             addModel("lastDeployment", lastDeployment);
         }
 
         RuleSetDeploymentEvent lastFailedDeployment = agent.getLastFailedDeploymentEvent();
-        if(lastFailedDeployment != null) {
+        if (lastFailedDeployment != null) {
             addModel("lastFailedDeployment", lastFailedDeployment);
         }
     }

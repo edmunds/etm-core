@@ -63,9 +63,9 @@ public class UrlRule {
      * Constructor with rule parameter.
      *
      * @param tokenResolver the resolver of tokens into expressions.
-     * @param mavenModule the mavenModule
-     * @param vipAddress  the address of this vip.
-     * @param rule        rule.
+     * @param mavenModule   the mavenModule
+     * @param vipAddress    the address of this vip.
+     * @param rule          rule.
      */
     public UrlRule(UrlTokenResolver tokenResolver, MavenModule mavenModule, String vipAddress, String rule) {
         Validate.notNull(tokenResolver, "tokenResolver is null");
@@ -95,7 +95,7 @@ public class UrlRule {
     /**
      * Compares this rule to another rule to calculate the relative priority.
      *
-     * @param other         the other rule to compare to.
+     * @param other the other rule to compare to.
      * @return the relative priority of the rules.
      */
     public RuleComparison compareTo(UrlRule other) {
