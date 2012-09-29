@@ -22,9 +22,11 @@ import com.edmunds.etm.loadbalancer.api.PoolMember;
 import com.edmunds.etm.loadbalancer.api.PoolMemberExistsException;
 import com.edmunds.etm.loadbalancer.api.PoolMemberNotFoundException;
 import com.edmunds.etm.loadbalancer.api.VirtualServer;
+import com.edmunds.etm.loadbalancer.api.VirtualServerConfig;
 import com.edmunds.etm.loadbalancer.api.VirtualServerExistsException;
 import com.edmunds.etm.loadbalancer.api.VirtualServerNotFoundException;
 import com.edmunds.etm.management.api.HostAddress;
+import com.edmunds.etm.management.api.HttpMonitor;
 import com.edmunds.etm.management.api.ManagementPoolMember;
 import com.edmunds.etm.management.api.ManagementVip;
 import com.edmunds.etm.management.api.ManagementVips;
@@ -62,7 +64,6 @@ public class LoadBalancerController {
     private final LoadBalancerConfig loadBalancerConfig;
     private EnvironmentConfiguration environment;
 
-    private Inet4AddressPool inet4AddressPool;
     private Map<String, VirtualServer> virtualServersByName;
 
     @Autowired
@@ -128,7 +129,6 @@ public class LoadBalancerController {
             logger.error("Failed to get all virtual servers", e);
             return false;
         }
-        inet4AddressPool = createInet4AddressPool(allVirtualServers);
 
         // Initialize the map of ETM virtual servers
         virtualServersByName = createEtmVirtualServerMap(allVirtualServers);
@@ -212,49 +212,62 @@ public class LoadBalancerController {
     }
 
     private ManagementVip createVirtualServer(ManagementVip vip) {
-        String serverName = createServerName(vip.getMavenModule());
+        final String serverName = createServerName(vip.getMavenModule());
+        final Set<PoolMember> poolMembers = vipToPoolMembers(vip);
+        final HttpMonitor httpMonitor = vip.getHttpMonitor();
         logger.info(String.format("Creating virtual server: %s", serverName));
 
-        // Check for existing virtual server
-        VirtualServer vs = virtualServersByName.get(serverName);
-        if (vs != null) {
-            logger.warn(String.format("Replacing existing virtual server: %s", serverName));
-            try {
-                deleteVirtualServer(vs);
-            } catch (RemoteException e) {
-                logger.error(String.format("Failed to delete virtual server: %s", serverName), e);
-            }
-        }
-
-        // Create new virtual server
-        String ipAddress = inet4AddressPool.issueAddress().toString();
-        int port = loadBalancerConfig.getDefaultVipPort();
-        vs = new VirtualServer(serverName, new HostAddress(ipAddress, port), vipToPoolMembers(vip));
-
-        try {
-            connection.createVirtualServer(vs, vip.getHttpMonitor());
-            virtualServersByName.put(vs.getName(), vs);
-        } catch (VirtualServerExistsException e) {
-            logger.warn(String.format("Attempted to create duplicate virtual server: %s", serverName), e);
-            try {
-                vs = connection.getVirtualServer(serverName);
-                virtualServersByName.put(vs.getName(), vs);
-            } catch (VirtualServerNotFoundException e1) {
-                logger.error(String.format("Virtual server not found: %s", serverName), e);
-            } catch (RemoteException e1) {
-                logger.error(String.format("Unable to get virtual server: %s", serverName), e);
-            }
-        } catch (RemoteException e) {
-            logger.error(String.format("Failed to create virtual server: %s", serverName), e);
+        if (!removeExistingVirtualServer(serverName)) {
             return null;
         }
 
-        Collection<ManagementPoolMember> updatedMembers = Lists.newArrayList();
+        final VirtualServer vs = createVirtualServerInternal(serverName, poolMembers, httpMonitor);
+        if (vs == null) {
+            return null;
+        }
+
+        virtualServersByName.put(serverName, vs);
+
+        final Collection<ManagementPoolMember> updatedMembers = Lists.newArrayList();
         for (PoolMember member : vs.getPoolMembers()) {
             updatedMembers.add(new ManagementPoolMember(ACTIVE, member.getHostAddress()));
         }
+
         return new ManagementVip(ACTIVE, vip.getMavenModule(), vs.getHostAddress(),
                 updatedMembers, vip.getRootContext(), vip.getRules(), vip.getHttpMonitor());
+    }
+
+    private boolean removeExistingVirtualServer(String serverName) {
+        try {
+            // Check for existing virtual server
+            final VirtualServer vs = virtualServersByName.get(serverName);
+            if (vs != null) {
+                logger.warn(String.format("Replacing existing virtual server: %s", serverName));
+                deleteVirtualServer(vs);
+            }
+            return true;
+        } catch (RemoteException e) {
+            logger.error(String.format("Failed to delete virtual server: %s", serverName), e);
+        }
+        return false;
+    }
+
+    private VirtualServer createVirtualServerInternal(
+            String serverName, Set<PoolMember> poolMembers, HttpMonitor httpMonitor) {
+        try {
+            // Create new virtual server (Note: HostAddress is null)
+            final VirtualServer vsTemplate = new VirtualServer(serverName, null, poolMembers);
+            final VirtualServerConfig vsConfig = new VirtualServerConfig(loadBalancerConfig.getDefaultVipPort());
+
+            final HostAddress hostAddress = connection.createVirtualServer(vsTemplate, vsConfig, httpMonitor);
+
+            return new VirtualServer(serverName, hostAddress, poolMembers);
+        } catch (VirtualServerExistsException e) {
+            logger.warn(String.format("Attempted to create duplicate virtual server: %s", serverName), e);
+        } catch (RemoteException e) {
+            logger.error(String.format("Failed to create virtual server: %s", serverName), e);
+        }
+        return null;
     }
 
     private void validateVirtualServer(ManagementVip vip) {
@@ -299,9 +312,6 @@ public class LoadBalancerController {
         } catch (VirtualServerNotFoundException e) {
             logger.warn(String.format("Attempted to delete nonexistent virtual server: %s", vs.getName()));
         }
-        if (vs.getHostAddress() != null) {
-            inet4AddressPool.releaseAddress(vs.getHostAddress().getHost());
-        }
     }
 
     private ManagementPoolMember addPoolMember(ManagementVip vip, ManagementPoolMember poolMember) {
@@ -340,38 +350,12 @@ public class LoadBalancerController {
         return null;
     }
 
-    private Inet4AddressPool createInet4AddressPool(Set<VirtualServer> virtualServers) {
-        Inet4AddressPool addressPool = new Inet4AddressPool(loadBalancerConfig);
-
-        Collection<OrderedInet4Address> serverAddresses = Sets.newHashSetWithExpectedSize(virtualServers.size());
-        for (VirtualServer vs : virtualServers) {
-
-            OrderedInet4Address address;
-            try {
-                address = new OrderedInet4Address(vs.getHostAddress().getHost());
-                serverAddresses.add(address);
-            } catch (RuntimeException e) {
-                logger.error(String.format("Invalid virtual server host: %s", vs.getHostAddress().getHost()), e);
-            }
-        }
-        addressPool.setAllocatedAddresses(serverAddresses);
-        return addressPool;
-    }
-
     private Map<String, VirtualServer> createEtmVirtualServerMap(Set<VirtualServer> virtualServers) {
         Map<String, VirtualServer> map = Maps.newHashMapWithExpectedSize(virtualServers.size());
 
         for (VirtualServer vs : virtualServers) {
-            OrderedInet4Address address;
-            try {
-                address = new OrderedInet4Address(vs.getHostAddress().getHost());
-            } catch (RuntimeException e) {
-                logger.error(String.format("Invalid virtual server host: %s", vs.getHostAddress().getHost()), e);
-                continue;
-            }
-
             String name = vs.getName();
-            if (name.startsWith(VIRTUAL_SERVER_NAME_PREFIX) && inet4AddressPool.isAddressInRange(address)) {
+            if (name.startsWith(VIRTUAL_SERVER_NAME_PREFIX)) {
                 map.put(vs.getName(), vs);
             }
         }

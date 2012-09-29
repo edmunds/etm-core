@@ -21,8 +21,10 @@ import com.edmunds.etm.loadbalancer.api.PoolMember;
 import com.edmunds.etm.loadbalancer.api.PoolMemberExistsException;
 import com.edmunds.etm.loadbalancer.api.PoolMemberNotFoundException;
 import com.edmunds.etm.loadbalancer.api.VirtualServer;
+import com.edmunds.etm.loadbalancer.api.VirtualServerConfig;
 import com.edmunds.etm.loadbalancer.api.VirtualServerExistsException;
 import com.edmunds.etm.loadbalancer.api.VirtualServerNotFoundException;
+import com.edmunds.etm.management.api.HostAddress;
 import com.edmunds.etm.management.api.HttpMonitor;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -76,8 +78,11 @@ public class DummyLoadBalancer implements LoadBalancerConnection {
     }
 
     @Override
-    public void createVirtualServer(VirtualServer server, HttpMonitor httpMonitor) throws
+    public HostAddress createVirtualServer(
+            VirtualServer server, VirtualServerConfig virtualServerConfig, HttpMonitor httpMonitor) throws
             VirtualServerExistsException, RemoteException {
+
+        return new HostAddress("localhost", virtualServerConfig.getPort());
     }
 
     @Override
