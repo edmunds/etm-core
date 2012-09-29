@@ -25,7 +25,6 @@ import com.edmunds.zookeeper.election.ZooKeeperElection;
 import com.edmunds.zookeeper.election.ZooKeeperElectionListener;
 import com.google.common.collect.Sets;
 import org.apache.log4j.Logger;
-import org.apache.zookeeper.KeeperException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -42,7 +41,6 @@ public class FailoverMonitor implements ZooKeeperConnectionListener, ZooKeeperEl
 
     private static final Logger logger = Logger.getLogger(FailoverMonitor.class);
 
-    private final ZooKeeperConnection connection;
     private final ZooKeeperElection masterElection;
     private final Set<FailoverListener> failoverListeners;
 
@@ -56,7 +54,6 @@ public class FailoverMonitor implements ZooKeeperConnectionListener, ZooKeeperEl
      */
     @Autowired
     public FailoverMonitor(ZooKeeperConnection connection, ControllerPaths controllerPaths) {
-        this.connection = connection;
         this.masterElection = new ZooKeeperElection(connection, controllerPaths.getMaster());
         this.failoverListeners = Sets.newHashSet();
         this.failoverState = FailoverState.UNKNOWN;
@@ -113,34 +110,29 @@ public class FailoverMonitor implements ZooKeeperConnectionListener, ZooKeeperEl
         changeFailoverState(FailoverState.ACTIVE);
     }
 
+    @PostConstruct
+    protected void initialize() {
+        changeFailoverState(FailoverState.STANDBY);
+        masterElection.addListener(this);
+    }
+
     @Override
     public void onConnectionStateChanged(ZooKeeperConnectionState state) {
         if (state == ZooKeeperConnectionState.INITIALIZED) {
-            masterElection.enroll(this);
+            changeFailoverState(FailoverState.STANDBY);
+            masterElection.enroll();
         }
     }
 
     @Override
-    public void onElectionLeader(ZooKeeperElection election) {
-        changeFailoverState(FailoverState.ACTIVE);
-    }
-
-    @Override
-    public void onElectionWithdrawn(ZooKeeperElection election) {
-        logger.warn("Unexpected withdrawal from master election, going on standby and re-enrolling");
-        changeFailoverState(FailoverState.STANDBY);
-        masterElection.enroll(this);
-    }
-
-    @Override
-    public void onElectionError(ZooKeeperElection election, KeeperException error) {
-        logger.error(String.format("Master election error, reconnecting: %s", error));
-        connection.reconnect();
-    }
-
-    @PostConstruct
-    protected void initialize() {
-        changeFailoverState(FailoverState.STANDBY);
+    public void onElectionStateChange(ZooKeeperElection zooKeeperElection, boolean master) {
+        if (master) {
+            if (getFailoverState() != FailoverState.SUSPENDED) {
+                changeFailoverState(FailoverState.ACTIVE);
+            }
+        } else {
+            changeFailoverState(FailoverState.STANDBY);
+        }
     }
 
     private void changeFailoverState(FailoverState state) {
@@ -149,5 +141,10 @@ public class FailoverMonitor implements ZooKeeperConnectionListener, ZooKeeperEl
         for (FailoverListener listener : failoverListeners) {
             listener.onFailoverStateChanged(this);
         }
+    }
+
+    public void shutdown() {
+        masterElection.withdraw();
+        setFailoverState(FailoverState.STANDBY);
     }
 }

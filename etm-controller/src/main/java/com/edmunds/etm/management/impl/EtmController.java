@@ -142,6 +142,14 @@ public class EtmController implements InitializingBean, DisposableBean {
 
         logger.info("*** Edmunds Traffic Manager Shutting Down ***");
 
+        if (failoverMonitor != null) {
+            failoverMonitor.shutdown();
+        }
+
+        if (controllerMonitor != null) {
+            controllerMonitor.shutdown();
+        }
+
         // Close the ZooKeeper connection
         if (connection != null) {
             connection.close();

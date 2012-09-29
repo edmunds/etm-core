@@ -19,6 +19,8 @@ import com.edmunds.etm.loadbalancer.api.AvailabilityStatus;
 import com.edmunds.etm.loadbalancer.impl.LoadBalancerDataAccessService;
 import com.edmunds.etm.runtime.api.Application;
 import com.edmunds.etm.runtime.impl.ApplicationRepository;
+import com.edmunds.etm.system.api.FailoverState;
+import com.edmunds.etm.system.impl.ControllerMonitor;
 import com.edmunds.etm.web.panel.ApplicationDetailPanel;
 import com.edmunds.etm.web.util.BooleanDecorator;
 import org.apache.click.ActionListener;
@@ -45,6 +47,7 @@ public class ApplicationsPage extends BorderPage {
 
     private final ApplicationRepository applicationRepository;
     private final LoadBalancerDataAccessService loadBalancerDataAccessService;
+    private final ControllerMonitor controllerMonitor;
     private final ActionLink viewLink;
     private final ApplicationDetailPanel applicationDetailPanel;
 
@@ -52,9 +55,11 @@ public class ApplicationsPage extends BorderPage {
 
     @Autowired
     public ApplicationsPage(ApplicationRepository applicationRepository,
-                            LoadBalancerDataAccessService loadBalancerDataAccessService) {
+                            LoadBalancerDataAccessService loadBalancerDataAccessService,
+                            ControllerMonitor controllerMonitor) {
         this.applicationRepository = applicationRepository;
         this.loadBalancerDataAccessService = loadBalancerDataAccessService;
+        this.controllerMonitor = controllerMonitor;
 
         // View link
         viewLink = new ActionLink("view");
@@ -99,6 +104,10 @@ public class ApplicationsPage extends BorderPage {
     }
 
     protected AvailabilityStatus getVirtualServerStatus(String serverName) {
+        if (controllerMonitor.getLocalController().getFailoverState() != FailoverState.ACTIVE) {
+            return AvailabilityStatus.UNKNOWN;
+        }
+
         return loadBalancerDataAccessService.getAvailabilityStatus(serverName);
     }
 
