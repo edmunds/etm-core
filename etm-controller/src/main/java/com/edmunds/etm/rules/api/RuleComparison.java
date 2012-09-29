@@ -18,7 +18,7 @@ package com.edmunds.etm.rules.api;
 /**
  * This enum represents the result of comparing two UrlRule objects.
  *
- * @Author David Trott
+ * @author David Trott
  */
 public enum RuleComparison {
     /**
