@@ -355,7 +355,7 @@ public class LoadBalancerController {
 
         for (VirtualServer vs : virtualServers) {
             String name = vs.getName();
-            if (name.startsWith(VIRTUAL_SERVER_NAME_PREFIX)) {
+            if (name.startsWith(createServerEnvironmentPrefix())) {
                 map.put(vs.getName(), vs);
             }
         }
@@ -378,6 +378,10 @@ public class LoadBalancerController {
             poolMembers.add(new PoolMember(mpm.getHostAddress()));
         }
         return poolMembers;
+    }
+
+    private String createServerEnvironmentPrefix() {
+        return VirtualServer.createServerEnvironmentPrefix(VIRTUAL_SERVER_NAME_PREFIX, environment);
     }
 
     private String createServerName(MavenModule mavenModule) {
