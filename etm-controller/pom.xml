@@ -101,6 +101,11 @@
             <artifactId>click-extras</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>org.freemarker</groupId>
+            <artifactId>freemarker</artifactId>
+        </dependency>
+
         <!-- Provided Dependencies -->
         <dependency>
             <groupId>javax.servlet</groupId>
