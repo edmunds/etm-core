@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>com.edmunds.oss.etm</groupId>       
+        <groupId>com.edmunds.oss.etm</groupId>
         <artifactId>etm-core</artifactId>
         <version>1.0.1-SNAPSHOT</version>
     </parent>
@@ -15,7 +15,7 @@
         <!-- Edmunds Dependencies -->
 
         <dependency>
-            <groupId>com.edmunds.oss.etm</groupId>       
+            <groupId>com.edmunds.oss.etm</groupId>
             <artifactId>etm-loadbalancer-api</artifactId>
         </dependency>
 
@@ -37,13 +37,7 @@
             <scope>test</scope>
         </dependency>
 
-        <dependency>
-            <groupId>org.easymock</groupId>
-            <artifactId>easymockclassextension</artifactId>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
+       <dependency>
             <groupId>org.testng</groupId>
             <artifactId>testng</artifactId>
             <classifier>jdk15</classifier>
