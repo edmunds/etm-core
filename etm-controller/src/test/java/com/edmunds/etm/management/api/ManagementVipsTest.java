@@ -16,7 +16,7 @@
 package com.edmunds.etm.management.api;
 
 import com.google.common.collect.Lists;
-import org.easymock.classextension.IMocksControl;
+import org.easymock.IMocksControl;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -25,7 +25,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
-import static org.easymock.classextension.EasyMock.createControl;
+import static org.easymock.EasyMock.createControl;
 import static org.testng.Assert.fail;
 
 @Test

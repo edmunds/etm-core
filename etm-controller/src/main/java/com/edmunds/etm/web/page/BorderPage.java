@@ -42,6 +42,7 @@ public abstract class BorderPage extends Page {
         addControl(new MenuPageLink("urlRules", "URL Rules", UrlRulesPage.class));
         addControl(new MenuPageLink("urlTokens", "URL Tokens", UrlTokensPage.class));
         addControl(new MenuPageLink("apacheRules", ApacheRulesPage.class));
+        addControl(new MenuPageLink("haProxyRules", HaProxyRulesPage.class));
         addControl(new MenuPageLink("agents", AgentsPage.class));
         addControl(new MenuPageLink("configuration", ConfigurationPage.class));
     }

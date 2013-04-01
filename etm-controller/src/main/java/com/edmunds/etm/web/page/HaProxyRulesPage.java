@@ -29,23 +29,23 @@ import java.io.InputStreamReader;
 import java.util.List;
 
 /**
- * Displays the current Apache web server configuration.
+ * Displays the current HA Proxy web server configuration.
  *
  * @author Ryan Holmes
  */
 @Component
-public class ApacheRulesPage extends BorderPage {
+public class HaProxyRulesPage extends BorderPage {
 
     private final AgentConfigurationManager agentConfigurationManager;
 
     @Autowired
-    public ApacheRulesPage(AgentConfigurationManager agentConfigurationManager) {
+    public HaProxyRulesPage(AgentConfigurationManager agentConfigurationManager) {
         this.agentConfigurationManager = agentConfigurationManager;
     }
 
     @Override
     public String getTitle() {
-        return "Apache Rules";
+        return "HA Proxy Rules";
     }
 
     @Override
@@ -57,7 +57,7 @@ public class ApacheRulesPage extends BorderPage {
     private List<String> getRuleSetLines() {
         List<String> lines = Lists.newArrayList();
 
-        byte[] ruleSetData = agentConfigurationManager.getActiveRuleSetData();
+        byte[] ruleSetData = agentConfigurationManager.getActiveRuleSetData("haproxy");
 
         InputStream inputStream = new ByteArrayInputStream(ruleSetData);
         BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
@@ -77,7 +77,7 @@ public class ApacheRulesPage extends BorderPage {
     }
 
     private String getRuleSetDigest() {
-        String digest = agentConfigurationManager.getActiveRuleSetDigest();
+        String digest = agentConfigurationManager.getActiveRuleSetDigest("haproxy");
         return digest != null ? digest : "";
     }
 }

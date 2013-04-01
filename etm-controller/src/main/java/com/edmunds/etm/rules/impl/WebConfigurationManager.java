@@ -24,7 +24,6 @@ import com.edmunds.etm.rules.api.UrlRule;
 import com.edmunds.etm.rules.api.UrlRuleSet;
 import com.edmunds.etm.rules.api.UrlTokenChangeListener;
 import com.edmunds.etm.rules.api.UrlTokenResolver;
-import com.edmunds.etm.rules.api.WebServerConfigurationBuilder;
 import com.edmunds.etm.runtime.api.Application;
 import com.edmunds.etm.runtime.impl.ApplicationRepository;
 import com.edmunds.etm.system.api.FailoverState;
@@ -56,7 +55,7 @@ public class WebConfigurationManager implements UrlTokenChangeListener {
     private static final Logger logger = Logger.getLogger(WebConfigurationManager.class);
 
     private final ApplicationRepository applicationRepository;
-    private final WebServerConfigurationBuilder configurationBuilder;
+    private final AgentConfigurationManager agentConfigurationManager;
     private final VipDeltaCalculator vipDeltaCalculator;
     private final FailoverMonitor failoverMonitor;
     private UrlTokenResolver tokenResolver;
@@ -71,23 +70,23 @@ public class WebConfigurationManager implements UrlTokenChangeListener {
     /**
      * Constructor injection.
      *
-     * @param applicationRepository the application repository
-     * @param configurationBuilder  the configuration builder
-     * @param vipDeltaCalculator    the vip delta logic
-     * @param failoverMonitor       the failover monitor
-     * @param urlTokenMonitor       the url token monitor
+     * @param applicationRepository     the application repository
+     * @param agentConfigurationManager the configuration builder
+     * @param vipDeltaCalculator        the vip delta logic
+     * @param failoverMonitor           the failover monitor
+     * @param urlTokenMonitor           the url token monitor
      */
     @Autowired
     public WebConfigurationManager(
 
             ApplicationRepository applicationRepository,
-            WebServerConfigurationBuilder configurationBuilder,
+            AgentConfigurationManager agentConfigurationManager,
             VipDeltaCalculator vipDeltaCalculator,
             FailoverMonitor failoverMonitor,
             UrlTokenMonitor urlTokenMonitor) {
 
         this.applicationRepository = applicationRepository;
-        this.configurationBuilder = configurationBuilder;
+        this.agentConfigurationManager = agentConfigurationManager;
         this.vipDeltaCalculator = vipDeltaCalculator;
         this.failoverMonitor = failoverMonitor;
 
@@ -111,7 +110,7 @@ public class WebConfigurationManager implements UrlTokenChangeListener {
      * @param activeVips active application vips
      * @return digest of the new web proxy rule set
      */
-    public String updateConfiguration(ManagementVips activeVips) {
+    public Set<String> updateConfiguration(ManagementVips activeVips) {
         logger.debug("updateConfiguration() called");
         Validate.notNull(activeVips, "activeVips is null");
 
@@ -125,7 +124,7 @@ public class WebConfigurationManager implements UrlTokenChangeListener {
             updateRules(deltaVips);
         }
 
-        return configurationBuilder.getActiveRuleSetDigest();
+        return agentConfigurationManager.getActiveRuleSetDigests();
     }
 
     @Override
@@ -221,7 +220,7 @@ public class WebConfigurationManager implements UrlTokenChangeListener {
         activeRules = Collections.unmodifiableSet(currentRuleSet.orderRules());
         blockedRules = Collections.unmodifiableSet(currentRuleSet.getBlockedRules());
         invalidRules = Collections.unmodifiableSet(ignoredRules);
-        configurationBuilder.build(activeRules);
+        agentConfigurationManager.build(applicationRepository.getActiveApplications(), activeRules);
 
         // Store the previous rule activation order.
         this.previousApplicationActivationOrder = activatedApplications;

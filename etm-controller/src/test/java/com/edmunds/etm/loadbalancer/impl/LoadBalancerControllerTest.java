@@ -11,15 +11,15 @@ import com.edmunds.etm.management.api.ManagementVipType;
 import com.edmunds.etm.management.api.ManagementVips;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import org.easymock.classextension.EasyMock;
-import org.easymock.classextension.IMocksControl;
+import org.easymock.EasyMock;
+import org.easymock.IMocksControl;
 import org.testng.annotations.Test;
 
 import java.rmi.RemoteException;
 import java.util.Collection;
 import java.util.Set;
 
-import static org.easymock.classextension.EasyMock.expect;
+import static org.easymock.EasyMock.expect;
 
 @Test
 public class LoadBalancerControllerTest {

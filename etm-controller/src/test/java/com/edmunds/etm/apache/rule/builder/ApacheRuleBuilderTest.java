@@ -17,6 +17,8 @@ package com.edmunds.etm.apache.rule.builder;
 
 import com.edmunds.etm.common.api.FixedUrlToken;
 import com.edmunds.etm.common.api.RegexUrlToken;
+import com.edmunds.etm.management.api.MavenModule;
+import com.edmunds.etm.rules.api.UrlRule;
 import com.edmunds.etm.rules.api.UrlTokenResolver;
 import com.edmunds.etm.rules.impl.UrlTokenDictionary;
 import org.testng.annotations.BeforeClass;
@@ -33,48 +35,59 @@ import static org.testng.Assert.assertEquals;
 @Test
 public class ApacheRuleBuilderTest {
 
-    private ApacheRuleBuilder apacheRuleBuilder;
+    private MavenModule mavenModule;
     private UrlTokenResolver tokenResolver;
 
     @BeforeClass
     public void setUp() {
+        mavenModule = new MavenModule("com.edmunds", "test-module", "1.0.0");
 
         UrlTokenDictionary dictionary = new UrlTokenDictionary();
         dictionary.add(new FixedUrlToken("make", "audi", "bmw", "suzuki", "toyota"));
         dictionary.add(new FixedUrlToken("state",
-            "california",
-            "north-carolina",
-            "new-york",
-            "armed-forces-europeafricacanada"));
+                "california",
+                "north-carolina",
+                "new-york",
+                "armed-forces-europeafricacanada"));
         dictionary.add(new RegexUrlToken("zipcode", "\\d{5}"));
         dictionary.add(new RegexUrlToken("year", "(19|20)\\d{2}"));
         this.tokenResolver = dictionary;
-        apacheRuleBuilder = new ApacheRuleBuilder();
-        apacheRuleBuilder.setUrlTokenResolver(tokenResolver);
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void testNullPattern() {
+        new UrlRule(tokenResolver, mavenModule, "local", null);
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void testEmptyPattern() {
+        new UrlRule(tokenResolver, mavenModule, "local", "a");
     }
 
     @Test(dataProvider = "getRules")
     public void testTransformRule(String source, String transformed) {
-        assertEquals(apacheRuleBuilder.build(source), transformed);
+        final UrlRule rule = new UrlRule(tokenResolver, mavenModule, "local", source);
+
+        assertEquals(rule.toRegEx(tokenResolver), transformed);
     }
 
     @DataProvider
     public Object[][] getRules() {
         return new Object[][]{
-            {"rule", "^/rule$"},
-            {"rul*/**", "^/rul[^/]*/.*$"},
-            {"[make]", "^/(audi|bmw|suzuki|toyota)$"},
-            {"[state]", "^/(california|north-carolina|new-york|armed-forces-europeafricacanada)$"},
-            {"[zipcode]", "^/\\d{5}$"},
-            {"[year]", "^/(19|20)\\d{2}$"},
-            {"/crr/[year]", "^/crr/(19|20)\\d{2}$"},
-            {"/crr/[year]/", "^/crr/(19|20)\\d{2}/$"},
-            {"/crr//[year]/", "^/crr/(19|20)\\d{2}/$"},
-            {"/crr/[year]/*.html", "^/crr/(19|20)\\d{2}/[^/]*\\.html$"},
-            {"/**/*.html", "^/.*/[^/]*\\.html$"},
-            {"/**/", "^/.*/$"},
-            {"**", "^/.*$"},
-            {"*", "^/[^/]*$"},
-            {null, null},};
+                {"/rule.html", "^/rule\\.html$"},
+                {"/rul*/**", "^/rul[^/]*/.*$"},
+                {"/[make]", "^/(audi|bmw|suzuki|toyota)$"},
+                {"/[state]", "^/(california|north-carolina|new-york|armed-forces-europeafricacanada)$"},
+                {"/[zipcode]", "^/\\d{5}$"},
+                {"/[year]", "^/(19|20)\\d{2}$"},
+                {"/crr/[year]", "^/crr/(19|20)\\d{2}$"},
+                {"/crr/[year]/", "^/crr/(19|20)\\d{2}/$"},
+                {"/crr//[year]/", "^/crr//(19|20)\\d{2}/$"},
+                {"/crr/[year]/*.html", "^/crr/(19|20)\\d{2}/[^/]*\\.html$"},
+                {"/**/*.html", "^/.*/[^/]*\\.html$"},
+                {"/**/", "^/.*/$"},
+                {"/**", "^/.*$"},
+                {"/*", "^/[^/]*$"}
+        };
     }
 }

@@ -98,10 +98,10 @@ public class AgentMonitor implements ZooKeeperConnectionListener {
     /**
      * Waits for the specified rule set to be deployed to all web proxy agents.
      *
-     * @param ruleSetDigest digest of the rule set to wait for
+     * @param ruleSetDigests digest of the rule set to wait for
      * @return true when the rule set has been deployed, false when the timeout has been exceeded
      */
-    public boolean waitForRuleSetDeployment(String ruleSetDigest) {
+    public boolean waitForRuleSetDeployment(Set<String> ruleSetDigests) {
         long timeout = ruleSetDeploymentTimeout * getConnectedAgents().size();
         long startTime = System.currentTimeMillis();
         boolean timeoutExpired;
@@ -113,24 +113,24 @@ public class AgentMonitor implements ZooKeeperConnectionListener {
             }
             long currentTime = System.currentTimeMillis();
             timeoutExpired = (currentTime - startTime) < timeout;
-        } while (!isRuleSetDeployed(ruleSetDigest) && !timeoutExpired);
+        } while (!isRuleSetDeployed(ruleSetDigests) && !timeoutExpired);
         return !timeoutExpired;
     }
 
     /**
      * Indicates whether the specified rule set has been deployed to all web proxy agents.
      *
-     * @param ruleSetDigest digest of the rule set to check
+     * @param ruleSetDigests digest of the rule set to check
      * @return true if the rule set is deployed to all agents, false otherwise
      */
-    public boolean isRuleSetDeployed(String ruleSetDigest) {
-        if (ruleSetDigest == null) {
+    public boolean isRuleSetDeployed(Set<String> ruleSetDigests) {
+        if (ruleSetDigests == null) {
             return false;
         }
 
         for (AgentInstance agent : getConnectedAgents()) {
             String agentDigest = agent.getActiveRuleSetDigest();
-            if (!ruleSetDigest.equals(agentDigest)) {
+            if (!ruleSetDigests.contains(agentDigest)) {
                 return false;
             }
         }

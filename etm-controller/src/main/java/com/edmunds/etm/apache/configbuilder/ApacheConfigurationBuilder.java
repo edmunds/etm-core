@@ -15,49 +15,32 @@
  */
 package com.edmunds.etm.apache.configbuilder;
 
-import com.edmunds.etm.apache.domain.ApacheRewriteRule;
-import com.edmunds.etm.apache.domain.RewriteRule;
-import com.edmunds.etm.apache.rule.builder.ApacheRuleBuilder;
-import com.edmunds.etm.common.api.ControllerPaths;
 import com.edmunds.etm.rules.api.UrlRule;
+import com.edmunds.etm.rules.api.UrlTokenResolver;
 import com.edmunds.etm.rules.api.WebServerConfigurationBuilder;
-import com.edmunds.zookeeper.connection.ZooKeeperConnection;
-import com.edmunds.zookeeper.util.ZooKeeperUtils;
-import com.google.common.collect.Sets;
+import com.edmunds.etm.runtime.api.Application;
 import org.apache.commons.codec.digest.DigestUtils;
-import org.apache.log4j.Logger;
-import org.apache.zookeeper.AsyncCallback;
-import org.apache.zookeeper.KeeperException.Code;
-import org.apache.zookeeper.data.Stat;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.io.BufferedWriter;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.OutputStreamWriter;
+import java.nio.charset.Charset;
 import java.util.Collection;
-import java.util.Set;
 
 /**
  * {@link com.edmunds.etm.rules.api.WebServerConfigurationBuilder} interface implementation.
  *
- * @author Aliaksandr Savin
- * @author Ryan Holmes
+ * @author David Trott
  */
 @Component
 public class ApacheConfigurationBuilder implements WebServerConfigurationBuilder {
-
-    private static final Logger logger = Logger.getLogger(ApacheConfigurationBuilder.class);
 
     /**
      * RewriteEngine keyword.
      */
     private static final String REWRITE_ENGINE_KEYWORD = "RewriteEngine on";
 
-    private ApacheRuleBuilder ruleBuilder;
-    private ControllerPaths controllerPaths;
-    private ZooKeeperConnection connection;
+    private UrlTokenResolver urlTokenResolver;
+
     private byte[] activeRuleSetData;
     private String activeRuleSetDigest;
 
@@ -66,118 +49,54 @@ public class ApacheConfigurationBuilder implements WebServerConfigurationBuilder
         this.activeRuleSetDigest = "";
     }
 
+    /**
+     * Sets the url token resolver.
+     *
+     * @param urlTokenResolver the url token resolver
+     */
+    @Autowired
+    public void setUrlTokenResolver(UrlTokenResolver urlTokenResolver) {
+        this.urlTokenResolver = urlTokenResolver;
+    }
+
     @Override
-    public byte[] getActiveRuleSetData() {
-        return activeRuleSetData;
-    }
-
-    @Override
-    public String getActiveRuleSetDigest() {
-        return activeRuleSetDigest;
-    }
-
-    /**
-     * Sets rule builder.
-     *
-     * @param ruleBuilder rule builder
-     */
-    @Autowired
-    void setRuleBuilder(ApacheRuleBuilder ruleBuilder) {
-        this.ruleBuilder = ruleBuilder;
-    }
-
-    /**
-     * Sets the controller paths.
-     *
-     * @param controllerPaths controller paths
-     */
-    @Autowired
-    void setControllerPaths(ControllerPaths controllerPaths) {
-        this.controllerPaths = controllerPaths;
-    }
-
-    /**
-     * Sets the ZooKeeper connection.
-     *
-     * @param connection the ZooKeeper connection
-     */
-    @Autowired
-    void setConnection(ZooKeeperConnection connection) {
-        this.connection = connection;
+    public String getZooKeeperNodeName() {
+        return "apache";
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void build(Collection<UrlRule> rules) {
+    public byte[] build(Collection<Application> applications, Collection<UrlRule> rules) {
+        final StringBuilder builder = new StringBuilder();
 
-        try {
-            final ByteArrayOutputStream out = new ByteArrayOutputStream();
-            final BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(out));
+        builder.append(REWRITE_ENGINE_KEYWORD);
+        builder.append("\n");
 
-            Set<RewriteRule> config = Sets.newLinkedHashSet();
-
-            for (UrlRule rule : rules) {
-                String transformedRule = ruleBuilder.build(rule.getRule());
-                RewriteRule rewriteRule = new ApacheRewriteRule(transformedRule,
-                        rule.getVipAddress(),
-                        ApacheRewriteRule.PROXY_OPTION);
-                config.add(rewriteRule);
-            }
-
-            bw.append(REWRITE_ENGINE_KEYWORD);
-            for (RewriteRule rewriteRule : config) {
-                if (rewriteRule != null) {
-                    bw.newLine();
-                    bw.append(rewriteRule.build());
-                }
-            }
-            bw.newLine();
-            bw.close();
-
-            // Deploy configuration to the web tier
-            byte[] configData = out.toByteArray();
-            deployConfiguration(controllerPaths.getApacheConf(), configData);
-        } catch (IOException e) {
-            // Never happen.
-            throw new RuntimeException(e);
+        for (UrlRule rule : rules) {
+            builder.append("RewriteRule ");
+            rule.toRegEx(urlTokenResolver, builder);
+            builder.append(" http://").append(rule.getVipAddress()).append("$0 [P]\n");
         }
+
+        final byte[] ruleSet = builder.toString().getBytes(Charset.forName("UTF8"));
+        updateActiveRuleSet(ruleSet);
+        // Deploy configuration to the web tier
+        return ruleSet;
     }
 
-    private void deployConfiguration(String nodePath, final byte[] configData) {
-
-        AsyncCallback.StatCallback cb = new AsyncCallback.StatCallback() {
-            @Override
-            public void processResult(int rc, String path, Object ctx, Stat stat) {
-                onConfigurationSetData(Code.get(rc), path, configData);
-            }
-        };
-        connection.setData(nodePath, configData, -1, cb, null);
-
-        updateActiveRuleSet(configData);
-
-        if (logger.isDebugEnabled()) {
-            String message = String.format("New Apache configuration generated: \n%s", new String(configData));
-            logger.debug(message);
-        }
+    @Override
+    public synchronized byte[] getActiveRuleSetData() {
+        return activeRuleSetData;
     }
 
-    protected void onConfigurationSetData(Code rc, String path, byte[] data) {
-        if (rc == Code.OK) {
-            return;
-        } else if (ZooKeeperUtils.isRetryableError(rc)) {
-
-            // Retry recoverable errors
-            logger.warn(String.format("Error %s while setting node %s, retrying", rc, path));
-            deployConfiguration(path, data);
-        } else {
-            // Log other errors
-            logger.error(String.format("Error %s while setting node %s", rc, path));
-        }
+    @Override
+    public synchronized String getActiveRuleSetDigest() {
+        return activeRuleSetDigest;
     }
 
-    private void updateActiveRuleSet(byte[] data) {
+    private synchronized void updateActiveRuleSet(byte[] data) {
         activeRuleSetData = data;
         activeRuleSetDigest = data != null ? DigestUtils.md5Hex(data) : "";
     }

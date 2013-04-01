@@ -9,6 +9,7 @@
     <import resource="classpath:load-balancer-context.xml"/>
 
     <context:component-scan base-package="com.edmunds.etm.apache"/>
+    <context:component-scan base-package="com.edmunds.etm.haproxy"/>
     <context:component-scan base-package="com.edmunds.etm.loadbalancer"/>
     <context:component-scan base-package="com.edmunds.etm.management"/>
     <context:component-scan base-package="com.edmunds.etm.rules"/>

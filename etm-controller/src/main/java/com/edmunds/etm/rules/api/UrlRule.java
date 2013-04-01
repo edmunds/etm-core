@@ -269,4 +269,23 @@ public class UrlRule {
     public String toString() {
         return rule;
     }
+
+    public String toRegEx(UrlTokenResolver urlTokenResolver) {
+        final StringBuilder result = new StringBuilder();
+
+        toRegEx(urlTokenResolver, result);
+
+        return result.toString();
+    }
+
+    public void toRegEx(UrlTokenResolver urlTokenResolver, StringBuilder result) {
+        result.append("^");
+
+        for (UrlRuleSegment segment : segments) {
+            result.append("/");
+            result.append(segment.toRegEx(urlTokenResolver));
+        }
+
+        result.append("$");
+    }
 }

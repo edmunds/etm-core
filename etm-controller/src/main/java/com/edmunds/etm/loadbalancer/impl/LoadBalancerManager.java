@@ -34,6 +34,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.Collection;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -211,10 +212,10 @@ public class LoadBalancerManager
 
             // update web proxy rules including vip deletions
             ManagementVips proxyVips = lbVips.removeAll(deletedVips);
-            String ruleSetDigest = webConfigurationManager.updateConfiguration(proxyVips);
+            Set<String> ruleSetDigests = webConfigurationManager.updateConfiguration(proxyVips);
 
             // wait for the new rule set to be deployed
-            agentMonitor.waitForRuleSetDeployment(ruleSetDigest);
+            agentMonitor.waitForRuleSetDeployment(ruleSetDigests);
 
             // remove deleted vips from the load balancer
             lbVips = loadBalancerController.updateLoadBalancerConfiguration(lbVips, false, true);

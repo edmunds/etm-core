@@ -1,77 +1,95 @@
-/*
- * Copyright 2011 Edmunds.com, Inc.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package com.edmunds.etm.apache.configbuilder;
 
-import com.edmunds.etm.apache.rule.builder.ApacheRuleBuilder;
-import com.edmunds.etm.common.api.ControllerPaths;
+import com.edmunds.etm.common.api.FixedUrlToken;
+import com.edmunds.etm.common.api.RegexUrlToken;
 import com.edmunds.etm.management.api.MavenModule;
-import com.edmunds.etm.rules.api.DefaultUrlTokenDictionary;
 import com.edmunds.etm.rules.api.UrlRule;
-import com.edmunds.zookeeper.connection.ZooKeeperConnection;
-import org.testng.annotations.BeforeClass;
+import com.edmunds.etm.rules.api.UrlTokenResolver;
+import com.edmunds.etm.rules.impl.UrlTokenDictionary;
+import com.google.common.collect.Lists;
+import org.apache.commons.io.IOUtils;
 import org.testng.annotations.Test;
 
-import java.util.LinkedHashSet;
-import java.util.Set;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.List;
 
-import static org.easymock.EasyMock.expect;
-import static org.easymock.classextension.EasyMock.createMock;
-import static org.easymock.classextension.EasyMock.replay;
-import static org.easymock.classextension.EasyMock.verify;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotNull;
 
-/**
- * Test for {@link com.edmunds.etm.rules.api.WebServerConfigurationBuilder}
- *
- * @author Aliaksandr Savin
- */
 @Test
 public class ApacheConfigurationBuilderTest {
 
-    private ApacheConfigurationBuilder configurationBuilder;
-    private Set<UrlRule> rules;
-    private ApacheRuleBuilder ruleBuilder;
-    private ControllerPaths controllerPaths;
-    private ZooKeeperConnection connection;
+    @Test
+    public void testApacheConfigGeneration() throws Exception {
 
-    @BeforeClass
-    public void setUp() {
-        rules = new LinkedHashSet<UrlRule>();
-        rules.add(getUrlRule());
+        final UrlTokenDictionary urlTokenResolver = new UrlTokenDictionary();
 
-        ruleBuilder = createMock(ApacheRuleBuilder.class);
-        controllerPaths = createMock(ControllerPaths.class);
-        connection = createMock(ZooKeeperConnection.class);
-        configurationBuilder = new ApacheConfigurationBuilder();
-        configurationBuilder.setRuleBuilder(ruleBuilder);
-        configurationBuilder.setControllerPaths(controllerPaths);
-        configurationBuilder.setConnection(connection);
+        urlTokenResolver.add(new RegexUrlToken("model", "[^/]*"));
+        urlTokenResolver.add(new RegexUrlToken("year", "(19|20)\\d{2}"));
+        urlTokenResolver.add(new FixedUrlToken("make",
+                "acura", "am-general", "amgeneral", "aston-martin", "astonmartin", "audi", "bentley", "bmw", "bugatti",
+                "buick", "cadillac", "chevrolet", "chrysler", "daewoo", "dodge", "dummy", "eagle", "ferrari", "fiat",
+                "fisker", "ford", "geo", "gmc", "honda", "hummer", "hyundai", "infiniti", "isuzu", "jaguar", "jeep",
+                "kia", "lamborghini", "land-rover", "landrover", "lexus", "lincoln", "lotus", "mahindra", "maserati",
+                "maybach", "mazda", "mclaren", "mercedes-benz", "mercedesbenz", "mercury", "mini", "mitsubishi",
+                "nissan", "oldsmobile", "panoz", "plymouth", "pontiac", "porsche", "ram", "rolls-royce", "rollsroyce",
+                "saab", "saturn", "scion", "smart", "spyker", "srt", "subaru", "suzuki", "tesla", "toyota",
+                "volkswagen", "volvo"));
+
+        final ApacheConfigurationBuilder configBuilder = new ApacheConfigurationBuilder();
+        configBuilder.setUrlTokenResolver(urlTokenResolver);
+
+        final List<String> lines = loadUrlLines();
+        final List<UrlRule> urlRules = loadUrlRules(urlTokenResolver, lines);
+        final byte[] result = configBuilder.build(null, urlRules);
+
+        // Load the expected value
+        final byte[] expectedConfig = loadApacheConfig();
+        assertNotNull(expectedConfig, "Unable to load sample Apache config");
+
+        assertNotNull(result);
+        assertEquals(result, expectedConfig);
     }
 
-    public void testGenerateConfiguration() {
-        expect(ruleBuilder.build("/rule/")).andReturn("/rule/").once();
+    private List<UrlRule> loadUrlRules(UrlTokenResolver urlTokenResolver, List<String> lines) {
+        final MavenModule mavenModule = new MavenModule("com.edmunds", "test-artifact", "1.0.0");
 
-        replay(ruleBuilder);
+        final List<UrlRule> urlRules = Lists.newArrayList();
 
-        configurationBuilder.build(rules);
-        verify(ruleBuilder);
-        // TODO verify the configuration.
+        for (String line : lines) {
+            final String[] split = line.split("\t");
+            final String rule = split[0];
+            final String vipAddress = split[2];
+            urlRules.add(new UrlRule(urlTokenResolver, mavenModule, vipAddress, rule));
+        }
+
+        return urlRules;
     }
 
-    private UrlRule getUrlRule() {
-        return new UrlRule(DefaultUrlTokenDictionary.newInstance(),
-                new MavenModule("com.edmunds", "test-app", "1.0.0"), "1.2.3.4:80", "/rule/");
+    private List<String> loadUrlLines() throws IOException {
+        InputStream stream = null;
+        try {
+            stream = getClass().getResourceAsStream("/url-rules.txt");
+
+            return IOUtils.readLines(stream, "UTF8");
+        } finally {
+            if (stream != null) {
+                stream.close();
+            }
+        }
+    }
+
+    private byte[] loadApacheConfig() throws IOException {
+        InputStream stream = null;
+        try {
+            stream = getClass().getResourceAsStream("/apache.conf");
+
+            return IOUtils.toByteArray(stream);
+        } finally {
+            if (stream != null) {
+                stream.close();
+            }
+        }
     }
 }

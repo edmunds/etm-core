@@ -15,6 +15,7 @@
  */
 package com.edmunds.etm.rules.api;
 
+import com.edmunds.etm.common.util.RegexUtil;
 import org.apache.commons.lang.Validate;
 import org.apache.commons.lang.builder.EqualsBuilder;
 
@@ -29,6 +30,9 @@ import static com.edmunds.etm.rules.api.SegmentType.EMPTY;
 import static com.edmunds.etm.rules.api.SegmentType.STAR;
 import static com.edmunds.etm.rules.api.SegmentType.TOKEN;
 import static com.edmunds.etm.rules.api.SegmentType.WILDCARD;
+import static com.edmunds.etm.rules.util.Constants.ANY_SYMBOLS_EXCEPT_SLASH_REGEXP;
+import static com.edmunds.etm.rules.util.Constants.ANY_SYMBOLS_REGEXP;
+import static com.edmunds.etm.rules.util.Constants.ASTERISK;
 
 /**
  * Represents a segment of a url rule.
@@ -39,7 +43,9 @@ import static com.edmunds.etm.rules.api.SegmentType.WILDCARD;
  */
 public class UrlRuleSegment {
 
-    /** The resolver for tokens into their defining regular expressions. */
+    /**
+     * The resolver for tokens into their defining regular expressions.
+     */
     private UrlTokenResolver tokenResolver;
 
     private final String segment;
@@ -65,8 +71,8 @@ public class UrlRuleSegment {
      * @param lastSegment is this the last segment (additional validations can be applied).
      * @throws IllegalArgumentException if the segment is invalid (cannot be handled by ETM).
      */
-    public UrlRuleSegment(UrlTokenResolver tokenResolver, String segment, boolean lastSegment)
-        throws IllegalArgumentException {
+    public UrlRuleSegment(UrlTokenResolver tokenResolver, String segment, boolean lastSegment) throws
+            IllegalArgumentException {
         Validate.notNull(tokenResolver, "tokenResolver is null");
 
         this.tokenResolver = tokenResolver;
@@ -125,7 +131,7 @@ public class UrlRuleSegment {
      * A return value of HIGH_PRIORITY means this segment has higher priority that the other segment. A return value of
      * OVERLAP means the priorities cannot be determined.
      *
-     * @param other         the other segment to compare to.
+     * @param other the other segment to compare to.
      * @return the result of the comparison.
      */
     public RuleComparison compareTo(UrlRuleSegment other) {
@@ -257,6 +263,25 @@ public class UrlRuleSegment {
     @Override
     public String toString() {
         return "UrlRuleSegment{" + "segment='" + segment + "', segmentType=" + segmentType + '}';
+    }
+
+    public String toRegEx(UrlTokenResolver urlTokenResolver) {
+        switch (segmentType) {
+            case COMPLETE:
+                return RegexUtil.escapeRegex(segment);
+            case STAR:
+                return ANY_SYMBOLS_EXCEPT_SLASH_REGEXP;
+            case DOUBLE_STAR:
+                return ANY_SYMBOLS_REGEXP;
+            case TOKEN:
+                return urlTokenResolver.resolveToken(segment);
+            case WILDCARD:
+                return RegexUtil.escapeRegex(segment).replace(ASTERISK, ANY_SYMBOLS_EXCEPT_SLASH_REGEXP);
+            case EMPTY:
+                return "";
+            default:
+                throw new IllegalArgumentException("Unknown segment type: " + segmentType);
+        }
     }
 
     @Override

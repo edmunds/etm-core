@@ -15,7 +15,7 @@
  */
 package com.edmunds.etm.system.impl;
 
-import com.edmunds.etm.apache.configbuilder.ApacheConfigurationBuilder;
+import com.edmunds.etm.rules.impl.AgentConfigurationManager;
 import com.edmunds.etm.rules.impl.WebConfigurationManager;
 import com.edmunds.etm.runtime.impl.ApplicationRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,19 +36,19 @@ public class ControllerMBean {
     private final FailoverMonitor failoverMonitor;
     private final ApplicationRepository applicationRepository;
     private final WebConfigurationManager webConfigurationManager;
-    private final ApacheConfigurationBuilder apacheConfigurationBuilder;
+    private final AgentConfigurationManager agentConfigurationManager;
     private final ProjectProperties projectProperties;
 
     @Autowired
     public ControllerMBean(FailoverMonitor failoverMonitor,
                            ApplicationRepository applicationRepository,
                            WebConfigurationManager webConfigurationManager,
-                           ApacheConfigurationBuilder apacheConfigurationBuilder,
+                           AgentConfigurationManager agentConfigurationManager,
                            ProjectProperties projectProperties) {
         this.failoverMonitor = failoverMonitor;
         this.applicationRepository = applicationRepository;
         this.webConfigurationManager = webConfigurationManager;
-        this.apacheConfigurationBuilder = apacheConfigurationBuilder;
+        this.agentConfigurationManager = agentConfigurationManager;
         this.projectProperties = projectProperties;
     }
 
@@ -84,7 +84,7 @@ public class ControllerMBean {
 
     @ManagedAttribute(description = "Digest of the active Apache rule set")
     public String getApacheRuleSetDigest() {
-        return apacheConfigurationBuilder.getActiveRuleSetDigest();
+        return agentConfigurationManager.getActiveRuleSetDigest();
     }
 
     @ManagedAttribute(description = "ETM Controller version")

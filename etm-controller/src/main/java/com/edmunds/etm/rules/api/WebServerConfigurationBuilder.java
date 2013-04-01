@@ -15,6 +15,8 @@
  */
 package com.edmunds.etm.rules.api;
 
+import com.edmunds.etm.runtime.api.Application;
+
 import java.util.Collection;
 
 /**
@@ -29,11 +31,19 @@ import java.util.Collection;
 public interface WebServerConfigurationBuilder {
 
     /**
+     * Returns the name of the node in zookeeper where the generated configuration should be stored.
+     *
+     * @return the name of the node (without the path).
+     */
+    String getZooKeeperNodeName();
+
+    /**
      * Builds web server configuration according to the specified set of rules.
      *
-     * @param rules set of rules.
+     * @param applications collection of applications.
+     * @param rules        set of rules.
      */
-    void build(Collection<UrlRule> rules);
+    byte[] build(Collection<Application> applications, Collection<UrlRule> rules);
 
     /**
      * Gets the active rule set configuration data.

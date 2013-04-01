@@ -15,10 +15,10 @@
  */
 package com.edmunds.etm.web.page;
 
-import com.edmunds.etm.apache.configbuilder.ApacheConfigurationBuilder;
 import com.edmunds.etm.common.api.AgentInstance;
 import com.edmunds.etm.common.api.RuleSetDeploymentEvent;
 import com.edmunds.etm.common.api.RuleSetDeploymentResult;
+import com.edmunds.etm.rules.impl.AgentConfigurationManager;
 import com.edmunds.etm.system.impl.AgentMonitor;
 import com.edmunds.etm.web.panel.AgentDetailPanel;
 import com.edmunds.etm.web.util.EtmFormat;
@@ -47,7 +47,7 @@ import java.util.UUID;
 public class AgentsPage extends BorderPage {
 
     private final AgentMonitor agentMonitor;
-    private final ApacheConfigurationBuilder apacheConfigurationBuilder;
+    private final AgentConfigurationManager agentConfigurationManager;
     private final ActionLink viewLink;
     private final AgentDetailPanel agentDetailPanel;
 
@@ -55,9 +55,10 @@ public class AgentsPage extends BorderPage {
 
     @Autowired
     public AgentsPage(AgentMonitor agentMonitor,
-                      ApacheConfigurationBuilder apacheConfigurationBuilder) {
+                      AgentConfigurationManager agentConfigurationManager) {
+
         this.agentMonitor = agentMonitor;
-        this.apacheConfigurationBuilder = apacheConfigurationBuilder;
+        this.agentConfigurationManager = agentConfigurationManager;
 
         // View link
         viewLink = new ActionLink("view");
@@ -147,7 +148,9 @@ public class AgentsPage extends BorderPage {
     }
 
     protected boolean ruleSetMatchesController(String ruleSetDigest) {
-        return ruleSetDigest != null && ruleSetDigest.equals(apacheConfigurationBuilder.getActiveRuleSetDigest());
+        final Set<String> digests = agentConfigurationManager.getActiveRuleSetDigests();
+
+        return ruleSetDigest != null && digests.contains(ruleSetDigest);
     }
 
     private AgentInstance getAgentInstanceById(String id) {
