@@ -5,13 +5,12 @@
        xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd http://www.springframework.org/schema/context
        http://www.springframework.org/schema/context/spring-context.xsd">
 
-    <context:component-scan base-package="com.edmunds.etm.dummy"/>
+    <context:component-scan base-package="com.edmunds.etm.identity"/>
 
-    <bean id="dummyLbConfig" class="com.edmunds.etm.dummy.DummyLbConfig">
+    <bean id="identityLbConfig" class="com.edmunds.etm.identity.IdentityLbConfig">
     </bean>
 
-    <bean id="dummyLbConfigurationPanel" class="com.edmunds.etm.web.panel.DummyLoadBalancerConfigurationPanel">
+    <bean id="identityLbConfigurationPanel" class="com.edmunds.etm.web.panel.IdentityLoadBalancerConfigurationPanel">
         <constructor-arg index="0" type="java.lang.String" value="loadBalancerConfigurationPanel"/>
-        <constructor-arg index="1" type="com.edmunds.etm.dummy.DummyLbConfig" ref="dummyLbConfig"/>
     </bean>
 </beans>

@@ -13,27 +13,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.edmunds.etm.dummy;
+package com.edmunds.etm.identity;
 
 import com.edmunds.etm.loadbalancer.api.LoadBalancerConfig;
 
 /**
- * Dummy Configuration for load balancer.
+ * Identity Configuration for load balancer.
  */
-public class DummyLbConfig implements LoadBalancerConfig {
+public class IdentityLbConfig implements LoadBalancerConfig {
 
     @Override
     public String getIpPoolStart() {
-        return "1.2.3.42";
+        return "1.1.1.1";
     }
 
     @Override
     public String getIpPoolEnd() {
-        return "1.2.3.101";
+        return "1.1.1.1";
     }
 
     @Override
     public int getDefaultVipPort() {
-        return 7890;
+        return 1111;
     }
 }

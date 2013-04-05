@@ -1,0 +1,7 @@
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd" >
+<suite name="etm" annotations="JDK">
+    <test name="default" verbose="1" annotations="JDK">
+        <packages>
+        </packages>
+    </test>
+</suite>

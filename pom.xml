@@ -70,7 +70,7 @@
 
             <dependency>
                 <groupId>com.edmunds.oss.etm</groupId>
-                <artifactId>etm-dummy-loadbalancer</artifactId>
+                <artifactId>etm-identity-loadbalancer</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
@@ -222,7 +222,7 @@
     </dependencyManagement>
 
     <modules>
-        <module>etm-dummy-loadbalancer</module>
+        <module>etm-identity-loadbalancer</module>
         <module>etm-controller</module>
         <module>etm-url-token-tool</module>
     </modules>

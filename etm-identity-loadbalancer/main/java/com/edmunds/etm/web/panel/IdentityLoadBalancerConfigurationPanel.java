@@ -15,23 +15,14 @@
  */
 package com.edmunds.etm.web.panel;
 
-import com.edmunds.etm.dummy.DummyLbConfig;
 import org.apache.click.control.Panel;
-import org.apache.commons.lang.Validate;
-
-import static org.apache.commons.lang.StringUtils.defaultString;
 
 /**
  * @author Ryan Holmes
  */
-public class DummyLoadBalancerConfigurationPanel extends Panel implements LoadBalancerConfigurationPanel {
-    public DummyLoadBalancerConfigurationPanel(String name, DummyLbConfig dummyLbConfig) {
+public class IdentityLoadBalancerConfigurationPanel extends Panel implements LoadBalancerConfigurationPanel {
+    public IdentityLoadBalancerConfigurationPanel(String name) {
         super(name);
-        setTemplate("/panel/dummy-lb-configuration-panel.htm");
-
-        Validate.notNull(dummyLbConfig, "Dummy config is null");
-        addModel("defaultVipPort", dummyLbConfig.getDefaultVipPort());
-        addModel("ipPoolStart", defaultString(dummyLbConfig.getIpPoolStart()));
-        addModel("ipPoolEnd", defaultString(dummyLbConfig.getIpPoolEnd()));
+        setTemplate("/panel/identity-lb-configuration-panel.htm");
     }
 }
