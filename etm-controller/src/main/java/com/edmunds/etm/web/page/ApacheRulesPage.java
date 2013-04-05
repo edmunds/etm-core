@@ -16,17 +16,8 @@
 package com.edmunds.etm.web.page;
 
 import com.edmunds.etm.rules.impl.AgentConfigurationManager;
-import com.google.common.collect.Lists;
-import org.apache.commons.lang.StringEscapeUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
-import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.util.List;
 
 /**
  * Displays the current Apache web server configuration.
@@ -50,30 +41,8 @@ public class ApacheRulesPage extends BorderPage {
 
     @Override
     public void onRender() {
-        addModel("ruleSetLines", getRuleSetLines());
+        addModel("ruleSetLines", agentConfigurationManager.getActiveRuleSetLines("apache"));
         addModel("ruleSetDigest", getRuleSetDigest());
-    }
-
-    private List<String> getRuleSetLines() {
-        List<String> lines = Lists.newArrayList();
-
-        byte[] ruleSetData = agentConfigurationManager.getActiveRuleSetData();
-
-        InputStream inputStream = new ByteArrayInputStream(ruleSetData);
-        BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
-        String line;
-        try {
-            line = reader.readLine();
-            while (line != null) {
-                line = line.replaceAll("\\|", " | "); // allow line breaks in long regex rules
-                lines.add(StringEscapeUtils.escapeHtml(line));
-                line = reader.readLine();
-            }
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-
-        return lines;
     }
 
     private String getRuleSetDigest() {

@@ -22,7 +22,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.nio.charset.Charset;
 
 /**
  * Writes printed output to the appropriate stream.
@@ -37,7 +39,8 @@ public class OutputWriter {
 
     @Autowired
     public OutputWriter(CommandLocator commandLocator) {
-        this.writer = new PrintWriter(System.out);
+        // Using the default charset is correct in this case, since we are writing to standard out.
+        this.writer = new PrintWriter(new OutputStreamWriter(System.out, Charset.defaultCharset()));
         this.commandLocator = commandLocator;
     }
 

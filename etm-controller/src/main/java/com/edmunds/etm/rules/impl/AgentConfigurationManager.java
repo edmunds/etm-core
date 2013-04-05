@@ -21,8 +21,11 @@ import com.edmunds.etm.rules.api.WebServerConfigurationBuilder;
 import com.edmunds.etm.runtime.api.Application;
 import com.edmunds.zookeeper.connection.ZooKeeperConnection;
 import com.edmunds.zookeeper.util.ZooKeeperUtils;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 import org.apache.zookeeper.AsyncCallback;
@@ -31,6 +34,11 @@ import org.apache.zookeeper.data.Stat;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.UnsupportedEncodingException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -52,10 +60,6 @@ public class AgentConfigurationManager {
     public AgentConfigurationManager() {
     }
 
-    public byte[] getActiveRuleSetData() {
-        return getActiveRuleSetData("apache");
-    }
-
     public String getActiveRuleSetDigest() {
         return getActiveRuleSetDigest("apache");
     }
@@ -66,6 +70,32 @@ public class AgentConfigurationManager {
 
     public String getActiveRuleSetDigest(String name) {
         return webServerConfigurationBuilders.get(name).getActiveRuleSetDigest();
+    }
+
+    public List<String> getActiveRuleSetLines(String name) {
+        BufferedReader reader = null;
+        try {
+            final byte[] ruleSetData = getActiveRuleSetData(name);
+            reader = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(ruleSetData), "UTF8"));
+            return getActiveRuleSetLines(reader);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        } finally {
+            IOUtils.closeQuietly(reader);
+        }
+    }
+
+    private List<String> getActiveRuleSetLines(BufferedReader reader) throws IOException {
+        final List<String> lines = Lists.newArrayList();
+
+        String line = reader.readLine();
+        while (line != null) {
+            line = line.replaceAll("\\|", " | "); // allow line breaks in long regex rules
+            lines.add(StringEscapeUtils.escapeHtml(line));
+            line = reader.readLine();
+        }
+
+        return lines;
     }
 
     public Set<String> getActiveRuleSetDigests() {
@@ -126,8 +156,7 @@ public class AgentConfigurationManager {
     }
 
     private void deployConfiguration(String nodePath, final byte[] configData) {
-
-        AsyncCallback.StatCallback cb = new AsyncCallback.StatCallback() {
+        final AsyncCallback.StatCallback cb = new AsyncCallback.StatCallback() {
             @Override
             public void processResult(int rc, String path, Object ctx, Stat stat) {
                 onConfigurationSetData(KeeperException.Code.get(rc), path, configData);
@@ -136,8 +165,15 @@ public class AgentConfigurationManager {
         connection.setData(nodePath, configData, -1, cb, null);
 
         if (logger.isDebugEnabled()) {
-            String message = String.format("New Apache configuration generated: \n%s", new String(configData));
-            logger.debug(message);
+            logRuleSet(configData);
+        }
+    }
+
+    private void logRuleSet(byte[] ruleSet) {
+        try {
+            logger.debug(String.format("New Apache configuration generated: %n%s", new String(ruleSet, "UTF8")));
+        } catch (UnsupportedEncodingException e) {
+            logger.fatal(e);          // Won't ever happen.
         }
     }
 

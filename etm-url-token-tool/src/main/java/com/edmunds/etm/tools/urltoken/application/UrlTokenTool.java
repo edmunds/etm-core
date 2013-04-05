@@ -28,6 +28,7 @@ import org.springframework.context.support.ClassPathXmlApplicationContext;
 import org.springframework.stereotype.Component;
 
 import java.util.Arrays;
+import java.util.concurrent.CountDownLatch;
 
 /**
  * The UrlTokenTool is a command-line tool for managing the URL tokens used in ETM.
@@ -42,7 +43,7 @@ public class UrlTokenTool implements ZooKeeperConnectionListener {
     private final ZooKeeperConnection connection;
     private final CommandLocator commandLocator;
     private final OutputWriter outputWriter;
-    private final Object lock = new Object();
+    private final CountDownLatch executionComplete = new CountDownLatch(1);
 
     private Command command;
     private String[] arguments;
@@ -92,9 +93,7 @@ public class UrlTokenTool implements ZooKeeperConnectionListener {
         connection.connect();
 
         try {
-            synchronized (lock) {
-                lock.wait();
-            }
+            executionComplete.await();
         } catch (InterruptedException e) {
             logger.warn("Main thread interrupted, exiting", e);
         } finally {
@@ -112,9 +111,8 @@ public class UrlTokenTool implements ZooKeeperConnectionListener {
     private void processCommand() {
         command.execute(arguments);
 
-        synchronized (lock) {
-            lock.notifyAll();
-        }
+        // Notify the main thread the execution is complete.
+        executionComplete.countDown();
     }
 
     private void printUsage() {

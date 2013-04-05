@@ -88,7 +88,7 @@ public class ApacheConfigurationBuilder implements WebServerConfigurationBuilder
 
     @Override
     public synchronized byte[] getActiveRuleSetData() {
-        return activeRuleSetData;
+        return activeRuleSetData == null ? null : activeRuleSetData.clone();
     }
 
     @Override

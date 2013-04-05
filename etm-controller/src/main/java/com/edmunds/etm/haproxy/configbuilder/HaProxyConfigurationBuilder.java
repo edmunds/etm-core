@@ -85,7 +85,7 @@ public class HaProxyConfigurationBuilder implements WebServerConfigurationBuilde
 
         try {
             baos = new ByteArrayOutputStream();
-            out = new OutputStreamWriter(baos);
+            out = new OutputStreamWriter(baos, "UTF8");
             freemarkerConfiguration.getTemplate("haproxy.ftl").process(root, out);
             out.close();
         } catch (TemplateException e) {
@@ -114,7 +114,7 @@ public class HaProxyConfigurationBuilder implements WebServerConfigurationBuilde
 
     @Override
     public synchronized byte[] getActiveRuleSetData() {
-        return activeRuleSetData;
+        return activeRuleSetData == null ? null : activeRuleSetData.clone();
     }
 
     @Override
@@ -130,7 +130,7 @@ public class HaProxyConfigurationBuilder implements WebServerConfigurationBuilde
     /**
      * Wrapper used to expose VIP's to the freemarker template.
      */
-    public class VipWrapper {
+    public static class VipWrapper {
         private final MavenModule mavenModule;
         private final VirtualServer virtualServer;
 
